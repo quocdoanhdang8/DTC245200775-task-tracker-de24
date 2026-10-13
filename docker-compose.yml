@@ -54,6 +54,7 @@ services:
     networks:
     - front
     - data
+    - observability
     depends_on:
       db:
         condition: service_healthy
@@ -80,6 +81,7 @@ services:
     - service_logs:/var/log/nginx
     networks:
     - front
+    - observability
     depends_on:
       task-app:
         condition: service_healthy
@@ -112,10 +114,96 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+    environment:
+      DATA_SOURCE_URI: db:5432/task_tracker?sslmode=disable
+      DATA_SOURCE_USER: metrics_exporter
+      DATA_SOURCE_PASS: ${EXPORTER_DB_PASSWORD:?Set EXPORTER_DB_PASSWORD in .env}
+    expose:
+    - '9187'
+    networks:
+    - data
+    - observability
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.5.2
+    command:
+    - --nginx.scrape-uri=http://nginx:8080/nginx_status
+    expose:
+    - '9113'
+    networks:
+    - front
+    - observability
+    depends_on:
+    - nginx
+    restart: unless-stopped
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.2
+    command:
+    - --docker_only=true
+    - --housekeeping_interval=30s
+    expose:
+    - '8080'
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:ro
+    - /sys:/sys:ro
+    - /var/lib/docker:/var/lib/docker:ro
+    - /dev/disk:/dev/disk:ro
+    networks:
+    - observability
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.path=/prometheus
+    - --storage.tsdb.retention.time=7d
+    - --web.enable-lifecycle
+    ports:
+    - 127.0.0.1:9090:9090
+    volumes:
+    - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    - prometheus_data:/prometheus
+    networks:
+    - observability
+    depends_on:
+    - task-app
+    - postgres-exporter
+    - nginx-exporter
+    - cadvisor
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana:13.2.2
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD
+        in .env}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      GF_SERVER_HTTP_PORT: 3000
+    ports:
+    - 127.0.0.1:3001:3000
+    volumes:
+    - grafana_data:/var/lib/grafana
+    - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+    - observability
+    depends_on:
+    - prometheus
+    restart: unless-stopped
 volumes:
   postgres_data: null
   pgadmin_data: null
+  prometheus_data: null
+  grafana_data: null
   service_logs: null
 networks:
   front: null
   data: {}
+  observability: {}

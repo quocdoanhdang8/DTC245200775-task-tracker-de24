@@ -1,0 +1,25 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":0},"id":1,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"sum(rate(task_tracker_http_requests_total[5m]))","legendFormat":"Requests / second","refId":"A"}],"title":"Application request rate","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"unit":"s"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":0},"id":2,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"histogram_quantile(0.95, sum(rate(task_tracker_http_request_duration_seconds_bucket[5m])) by (le))","legendFormat":"p95","refId":"A"}],"title":"Application latency p95","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":0,"y":8},"id":3,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"pg_up","legendFormat":"PostgreSQL","refId":"A"}],"title":"PostgreSQL exporter health","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":8,"y":8},"id":4,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"nginx_connections_active","legendFormat":"Active connections","refId":"A"}],"title":"Nginx active connections","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"unit":"percentunit"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":16,"y":8},"id":5,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"sum(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m]))","legendFormat":"Containers","refId":"A"}],"title":"Container CPU usage","type":"timeseries"}
+  ],
+  "refresh": "15s",
+  "schemaVersion": 41,
+  "tags": ["task-tracker", "course-demo"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Task Tracker Overview",
+  "uid": "task-tracker-overview",
+  "version": 1
+}
