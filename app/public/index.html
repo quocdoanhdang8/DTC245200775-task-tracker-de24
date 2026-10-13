@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ứng dụng quản lý công việc Task Tracker">
+  <title>Task Tracker | DTC245200775</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Task Tracker trang chủ"><span class="brand-mark">T</span><span>Task Tracker</span></a>
+    <div class="header-note"><span class="status-dot"></span> Không gian công việc của bạn</div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <div><p class="eyebrow">ĐỀ 24 · QUẢN LÝ CÔNG VIỆC</p><h1>Việc cần làm,<br><span>rõ ràng hơn mỗi ngày.</span></h1><p class="lede">Theo dõi công việc, hạn hoàn thành và tiến độ trong một nơi.</p></div>
+      <div class="hero-card"><span class="hero-card-label">Đang theo dõi</span><strong id="total-count">0</strong><span>công việc</span></div>
+    </section>
+    <section class="stats" aria-label="Thống kê công việc">
+      <article class="stat"><span class="stat-icon amber">◷</span><div><span>Chưa bắt đầu</span><strong id="todo-count">0</strong></div></article>
+      <article class="stat"><span class="stat-icon blue">↗</span><div><span>Đang thực hiện</span><strong id="progress-count">0</strong></div></article>
+      <article class="stat"><span class="stat-icon green">✓</span><div><span>Đã hoàn thành</span><strong id="done-count">0</strong></div></article>
+    </section>
+    <section class="workspace">
+      <div class="list-panel">
+        <div class="section-head"><div><p class="eyebrow">DANH SÁCH</p><h2>Công việc của bạn</h2></div><label class="filter-wrap"><span class="sr-only">Lọc trạng thái</span><select id="status-filter"><option value="">Tất cả trạng thái</option><option value="todo">Chưa bắt đầu</option><option value="in_progress">Đang thực hiện</option><option value="done">Đã hoàn thành</option></select></label></div>
+        <div id="task-list" class="task-list" aria-live="polite"></div>
+      </div>
+      <aside class="form-panel">
+        <div class="form-heading"><span class="form-plus">+</span><div><p class="eyebrow">BẮT ĐẦU NGAY</p><h2 id="form-title">Tạo công việc</h2></div></div>
+        <form id="task-form">
+          <label for="title">Tên công việc <span>*</span></label><input id="title" name="title" maxlength="160" placeholder="Ví dụ: Hoàn thành báo cáo" required>
+          <label for="description">Mô tả</label><textarea id="description" name="description" maxlength="4000" rows="3" placeholder="Ghi chú thêm về công việc..."></textarea>
+          <div class="field-row"><div><label for="dueDate">Hạn hoàn thành</label><input id="dueDate" name="dueDate" type="date"></div><div><label for="priority">Ưu tiên</label><select id="priority" name="priority"><option value="low">Thấp</option><option value="medium" selected>Vừa</option><option value="high">Cao</option></select></div></div>
+          <label for="status">Trạng thái</label><select id="status" name="status"><option value="todo">Chưa bắt đầu</option><option value="in_progress">Đang thực hiện</option><option value="done">Đã hoàn thành</option></select>
+          <p id="form-error" class="form-error" role="alert"></p>
+          <div class="form-actions"><button class="button button-primary" type="submit" id="submit-button">Thêm công việc <span>→</span></button><button class="button button-quiet hidden" type="button" id="cancel-edit">Hủy</button></div>
+        </form>
+        <p class="form-footnote"><span>●</span> Dữ liệu được lưu trong PostgreSQL.</p>
+      </aside>
+    </section>
+    <footer>Task Tracker <span>·</span> Triển khai và Quản trị Hệ thống Phần mềm</footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,121 @@
+name: task-tracker-de24
+services:
+  log-init:
+    image: alpine:3.24
+    user: 0:0
+    command:
+    - sh
+    - -ec
+    - mkdir -p /logs/app /logs/nginx && chown 10001:10001 /logs/app && chown 101:101
+      /logs/nginx
+    volumes:
+    - service_logs:/logs
+    restart: 'no'
+  db:
+    image: postgres:17.11-alpine3.24
+    environment:
+      POSTGRES_DB: task_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Copy .env.example to .env and
+        set passwords}
+      TASK_DB_PASSWORD: ${TASK_DB_PASSWORD:?Set TASK_DB_PASSWORD in .env}
+      EXPORTER_DB_PASSWORD: ${EXPORTER_DB_PASSWORD:?Set EXPORTER_DB_PASSWORD in .env}
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    - ./db/init:/docker-entrypoint-initdb.d:ro
+    networks:
+    - data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U postgres -d task_tracker
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+    restart: unless-stopped
+  task-app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: task_tracker
+      PGUSER: task_app
+      PGPASSWORD: ${TASK_DB_PASSWORD:?Set TASK_DB_PASSWORD in .env}
+      APP_LOG_FILE: /var/log/task-tracker/app.jsonl
+    expose:
+    - '3000'
+    volumes:
+    - service_logs:/var/log/task-tracker
+    networks:
+    - front
+    - data
+    depends_on:
+      db:
+        condition: service_healthy
+      log-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+      - CMD
+      - node
+      - -e
+      - fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 4s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+    - ${WEB_BIND_ADDRESS:-127.0.0.1}:8080:8080
+    volumes:
+    - service_logs:/var/log/nginx
+    networks:
+    - front
+    depends_on:
+      task-app:
+        condition: service_healthy
+      log-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - wget -q -O /dev/null http://127.0.0.1:8080/health || exit 1
+      interval: 10s
+      timeout: 4s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+  pgadmin:
+    image: dpage/pgadmin4:9.10
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD in .env}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    ports:
+    - 127.0.0.1:5050:80
+    volumes:
+    - ./db/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    - pgadmin_data:/var/lib/pgadmin
+    networks:
+    - data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  postgres_data: null
+  pgadmin_data: null
+  service_logs: null
+networks:
+  front: null
+  data: {}
