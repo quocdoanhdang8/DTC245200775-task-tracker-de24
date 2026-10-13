@@ -1,0 +1,43 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: task_tracker_app
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: task_tracker_app
+          service: task-tracker
+          __path__: /var/log/collected/app/app.jsonl
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            message: msg
+      - labels:
+          level:
+
+  - job_name: nginx_access
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nginx_access
+          service: nginx
+          log_type: access
+          __path__: /var/log/collected/nginx/access.log
+
+  - job_name: nginx_error
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nginx_error
+          service: nginx
+          log_type: error
+          __path__: /var/log/collected/nginx/error.log

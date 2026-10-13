@@ -1,0 +1,10 @@
+flowchart TB
+  Browser["Browser"] -->|"HTTP 8080"| Nginx["Nginx reverse proxy"]
+  Nginx --> App["Express Task Tracker"]
+  App -->|"SQL, task_app"| Postgres[("PostgreSQL")]
+  PgAdmin["pgAdmin"] --> Postgres
+  Prometheus["Prometheus"] --> App
+  Prometheus --> Exporters["Postgres exporter, Nginx exporter, cAdvisor"]
+  Grafana["Grafana"] --> Prometheus
+  Grafana --> Loki[("Loki")]
+  Promtail["Promtail reads shared log files"] --> Loki
