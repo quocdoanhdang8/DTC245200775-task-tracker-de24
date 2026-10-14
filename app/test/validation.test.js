@@ -25,3 +25,10 @@ test("partial updates validate only submitted fields", () => {
   assert.deepEqual(result.errors, []);
   assert.deepEqual(result.value, { status: "done" });
 });
+
+test("accepts a task without dueDate and defaults dueDate to null", () => {
+  const result = validateTask({ title: "Task without date" });
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.value.title, "Task without date");
+  assert.equal(result.value.dueDate, null);
+});

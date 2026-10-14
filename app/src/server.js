@@ -7,16 +7,32 @@ const client = require("prom-client");
 const { randomUUID } = require("node:crypto");
 const { validateTask, STATUSES } = require("./validation");
 
-const logFile = process.env.APP_LOG_FILE || "/var/log/task-tracker/app.jsonl";
-fs.mkdirSync(path.dirname(logFile), { recursive: true });
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  base: { service: "task-tracker", environment: process.env.NODE_ENV || "development" },
-  redact: ["req.headers.authorization", "password", "*.password"]
-}, pino.multistream([
-  { stream: process.stdout },
-  { stream: pino.destination({ dest: logFile, sync: false }) }
-]));
+const defaultLogDir = process.platform === "win32" ? path.join(__dirname, "../logs") : "/var/log/app";
+const logFile = process.env.APP_LOG_FILE || path.join(defaultLogDir, "app.jsonl");
+
+function createLogger() {
+  if (process.env.NODE_ENV === "test") {
+    return pino({ level: "silent" });
+  }
+  const streams = [{ stream: process.stdout }];
+  try {
+    fs.mkdirSync(path.dirname(logFile), { recursive: true });
+    const fileStream = pino.destination({ dest: logFile, sync: false });
+    fileStream.on("error", (err) => {
+      process.stderr.write(`Log file warning: ${err.message}\n`);
+    });
+    streams.push({ stream: fileStream });
+  } catch (err) {
+    process.stderr.write(`Log dir warning: ${err.message}\n`);
+  }
+  return pino({
+    level: process.env.LOG_LEVEL || "info",
+    base: { service: "task-tracker", environment: process.env.NODE_ENV || "development" },
+    redact: ["req.headers.authorization", "password", "*.password"]
+  }, pino.multistream(streams));
+}
+
+const logger = createLogger();
 
 const pool = new Pool({
   host: process.env.PGHOST || "127.0.0.1",
@@ -159,6 +175,9 @@ async function start() {
   const server = app.listen(Number(process.env.PORT || 3000), "0.0.0.0", () => logger.info({ port: Number(process.env.PORT || 3000) }, "server_started"));
   const shutdown = async (signal) => {
     logger.info({ signal }, "server_shutdown_started");
+    if (typeof server.closeIdleConnections === "function") {
+      server.closeIdleConnections();
+    }
     server.close(async () => { await pool.end(); process.exit(0); });
     setTimeout(() => process.exit(1), 10000).unref();
   };

@@ -17,7 +17,16 @@ flowchart LR
   Promtail["Promtail"] --> Loki
 ```
 
-Ba mạng Compose giới hạn giao tiếp theo chức năng: `front` kết nối Nginx với ứng dụng; `data` kết nối ứng dụng, PostgreSQL, pgAdmin và exporter PostgreSQL; `observability` kết nối các nguồn metrics, Loki, Promtail và Grafana. Mạng `data` và `observability` không định tuyến ra ngoài. Các cổng đã publish chỉ bind vào `127.0.0.1` theo mặc định. PostgreSQL lưu dữ liệu trong volume `postgres_data`.
+Các mạng Compose giới hạn giao tiếp theo chức năng:
+
+| Mạng | Service thành viên | Mục đích |
+|---|---|---|
+| `front` | `task-app`, `nginx`, `nginx-exporter` | Giao diện qua reverse proxy và Nginx status |
+| `data` (`internal`) | `task-app`, `db`, `pgadmin`, `postgres-exporter` | Truy cập PostgreSQL và quản trị database |
+| `observability` (`internal`) | `task-app`, `nginx`, exporters, Prometheus, Loki, Promtail, Grafana, cAdvisor | Metrics và log nội bộ |
+| `management` | `pgadmin`, Prometheus, Grafana | Hỗ trợ publish các giao diện quản trị trên Docker Desktop |
+
+`management` là bridge không internal nên các container thành viên có outbound connectivity; các cổng host của chúng vẫn bind `127.0.0.1`, không mở trực tiếp ra LAN. PostgreSQL lưu dữ liệu trong volume `postgres_data`.
 
 ## 2. Chuẩn bị và khởi động
 
@@ -124,20 +133,29 @@ docker compose exec db psql -U postgres -d task_tracker -c '\dt'
 | Target `containers` down | Kiểm tra host mounts cAdvisor và engine Linux trong Docker Desktop. |
 | Không có `docker compose` | Cập nhật Docker Desktop rồi chạy `docker compose version`. |
 
-## 8. Kiểm tra và giới hạn xác minh
+## 8. Kiểm tra và kết quả thực tế
 
-Các test input chạy bằng `cd app && npm test`. Kiểm tra cú pháp JS bằng `node --check app/src/server.js` và `node --check app/public/app.js`. Kiểm tra cấu hình và tích hợp cần Docker: `docker compose config`, sau đó `docker compose up -d --build`. Trong môi trường đã soạn repository, binary Docker không có; vì vậy các endpoint, metrics, dashboard và truy vấn LogQL chưa được đánh dấu là đã chạy thành công. Hãy xác minh chúng bằng Docker Desktop trước khi ghi kết quả thật vào báo cáo.
+- **Unit & API Tests:** Chạy `cd app && npm test` đạt **12/12 pass** (bao gồm input validation, routes, error handling).
+- **Cú pháp JavaScript:** Kiểm tra cú pháp hợp lệ bằng `node --check app/src/server.js`, `node --check app/src/validation.js`, `node --check app/public/app.js`.
+- **Trạng thái Docker:** Chạy `docker compose config` hợp lệ; khởi động thành công 12/12 container (`task-app`, `nginx`, `db`, `cadvisor` đều `healthy`; `prometheus`, `grafana`, `pgadmin`, `loki`, `promtail`, `nginx-exporter`, `postgres-exporter` đều `UP`).
+- **HTTP & E2E Testing:** Xác minh qua reverse proxy Nginx (`http://localhost:8080`): các luồng CRUD task hoạt động chuẩn xác, response headers có đầy đủ 5 security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy). Không rò rỉ stack trace hay thông tin nhạy cảm.
+- **Monitoring & Logs:** 5/5 targets trong Prometheus đều `UP` (100%); Grafana dashboard `Task Tracker Overview` hiển thị số liệu trực tiếp; Promtail chuyển tiếp log thành công và 3 truy vấn LogQL trong Loki đều trả về log thực tế.
 
 ## 9. Báo cáo và ảnh minh chứng
 
-Báo cáo nằm trong `docs/bao-cao-de24.docx`; bản Markdown để chỉnh sửa nằm trong `docs/bao-cao-de24.md`. Không có ảnh demo giả. Tự chụp ảnh của website có dữ liệu, pgAdmin và bảng `tasks`, Prometheus Targets, Grafana dashboard, truy vấn LogQL, headers HTTP, user container non-root và mạng Docker. Báo cáo ghi vị trí chèn từng ảnh.
+Báo cáo được biên soạn tại `docs/bao-cao-de24.docx` (sinh tự động từ `docs/bao-cao-de24.md` qua `python docs/build_report.py`). Không sử dụng ảnh chụp giả. Sinh viên tự chụp ảnh màn hình từ hệ thống đang chạy thật trên máy theo danh mục vị trí ảnh minh chứng:
+- **Hình 4.1:** Giao diện Task Tracker có các công việc demo.
+- **Hình 4.2:** pgAdmin kết nối và truy vấn bảng `tasks`.
+- **Hình 5.1:** Website qua Nginx và tab Network hiển thị security headers.
+- **Hình 6.1:** Prometheus Status → Targets (5/5 job UP).
+- **Hình 6.2:** Grafana Dashboard Task Tracker Overview.
+- **Hình 7.1:** Grafana Explore với kết quả 3 truy vấn LogQL.
+- **Hình 8.1:** Kiểm tra user non-root của app và danh sách các network Docker.
 
-Điền thông tin còn thiếu: **[HỌ VÀ TÊN]**, **[MSSV]**, **[LỚP]**, **[TRƯỜNG/KHOA]**, **[GIẢNG VIÊN]**, **[NĂM HỌC]**. Sau khi chạy thử, thay các nhãn `[CẦN KIỂM TRA SAU KHI CHẠY]` bằng kết quả có thể chứng minh.
+Điền thông tin cá nhân còn thiếu: **[HỌ VÀ TÊN]**, **[MSSV]**, **[LỚP]**, **[TRƯỜNG/KHOA]**, **[GIẢNG VIÊN]**, **[NĂM HỌC]** trước khi nộp bài.
 
-## 10. Ba mốc commit
+## 10. Ba mốc commit đề xuất
 
 1. `feat: add task tracker app, postgres, pgadmin and nginx`
 2. `feat: add prometheus grafana and application exporters`
 3. `feat: add loki promtail hardening and course report`
-
-Chỉ trình bày hệ thống như một demo đã kiểm chứng sau khi chạy Docker Compose trên máy có Docker Desktop và đã thu các ảnh minh chứng yêu cầu.

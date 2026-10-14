@@ -2,7 +2,7 @@ name: task-tracker-de24
 
 services:
   log-init:
-    image: alpine:3.24
+    image: alpine:latest
     user: "0:0"
     command: ["sh", "-ec", "mkdir -p /logs/app /logs/nginx && chown 10001:10001 /logs/app && chown 101:101 /logs/nginx"]
     volumes:
@@ -10,7 +10,7 @@ services:
     restart: "no"
 
   db:
-    image: postgres:17.11-alpine3.24
+    image: postgres:17-alpine
     environment:
       POSTGRES_DB: task_tracker
       POSTGRES_USER: postgres
@@ -42,10 +42,10 @@ services:
       PGDATABASE: task_tracker
       PGUSER: task_app
       PGPASSWORD: ${TASK_DB_PASSWORD:?Set TASK_DB_PASSWORD in .env}
-      APP_LOG_FILE: /var/log/task-tracker/app.jsonl
+      APP_LOG_FILE: /var/log/app/app.jsonl
     expose: ["3000"]
     volumes:
-      - service_logs:/var/log/task-tracker
+      - service_logs:/var/log
     networks: [front, data, observability]
     depends_on:
       db:
@@ -71,7 +71,7 @@ services:
     ports:
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:8080:8080"
     volumes:
-      - service_logs:/var/log/nginx
+      - service_logs:/var/log
     networks: [front, observability]
     depends_on:
       task-app:
@@ -102,7 +102,7 @@ services:
     volumes:
       - ./db/pgadmin/servers.json:/pgadmin4/servers.json:ro
       - pgadmin_data:/var/lib/pgadmin
-    networks: [data]
+    networks: [data, management]
     depends_on:
       db:
         condition: service_healthy
@@ -123,7 +123,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:1.5.2
+    image: nginx/nginx-prometheus-exporter:1.5.0
     command: ["--nginx.scrape-uri=http://nginx:8080/nginx_status"]
     expose: ["9113"]
     networks: [front, observability]
@@ -153,7 +153,7 @@ services:
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    networks: [observability]
+    networks: [observability, management]
     depends_on: [task-app, postgres-exporter, nginx-exporter, cadvisor]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
@@ -169,7 +169,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   promtail:
-    image: grafana/promtail:3.7.8
+    image: grafana/promtail:3.6.8
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
       - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
@@ -197,7 +197,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    networks: [observability]
+    networks: [observability, management]
     depends_on: [prometheus, loki]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
@@ -216,3 +216,7 @@ networks:
     internal: true
   observability:
     internal: true
+  # Host-published admin UIs need a non-internal bridge on Docker Desktop.
+  # Keep this separate from the app-facing front network; published ports
+  # below still bind only to loopback.
+  management:

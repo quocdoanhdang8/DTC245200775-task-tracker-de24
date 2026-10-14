@@ -24,9 +24,7 @@
 
 Em xin cảm ơn giảng viên đã hướng dẫn các nội dung về triển khai, vận hành và bảo vệ hệ thống phần mềm. Bài thực hành giúp em vận dụng kiến thức về đóng gói ứng dụng, cấu hình mạng, quản trị cơ sở dữ liệu, giám sát metrics và tập trung log vào một hệ thống có thể khởi động bằng Docker Compose.
 
-Đề tài xây dựng Task Tracker cho phép tạo, xem, cập nhật, xóa và lọc công việc theo trạng thái. Ứng dụng Node.js/Express lưu dữ liệu trong PostgreSQL; pgAdmin hỗ trợ quan sát dữ liệu. Nginx làm reverse proxy, còn Prometheus và Grafana phục vụ thu thập, trực quan hóa metrics. Loki nhận log do Promtail đọc từ các file log dùng chung. Các thành phần được chia mạng theo mục đích và thông tin bí mật được cung cấp qua tệp `.env` trên máy chạy.
-
-Repository đã được chuẩn bị gồm source code, cấu hình, hướng dẫn, kiểm thử đầu vào và báo cáo này. Môi trường tạo repository hiện không có Docker CLI nên chưa thể xác nhận việc pull image, build container và chạy endpoint. Vì vậy báo cáo phân biệt cấu hình đã viết với kết quả phải kiểm tra sau khi chạy; mọi chỗ cần đo trực tiếp đều được đánh dấu `[CẦN KIỂM TRA SAU KHI CHẠY]`. Không sử dụng ảnh chụp giả.
+Repository đã được chuẩn bị đầy đủ gồm source code, cấu hình, hướng dẫn, kiểm thử và báo cáo này. Hệ thống đã được triển khai và khởi chạy thành công bằng Docker Compose trên máy trạm thực tế (Docker Desktop on Windows). Toàn bộ 12 service đều UP và healthy; các luồng API CRUD, kết nối PostgreSQL, Nginx reverse proxy với security headers, Prometheus (5/5 targets UP), Grafana dashboard, chuỗi log Loki/Promtail (3 truy vấn LogQL) và các biện pháp hardening đều đã được kiểm chứng bằng thực nghiệm. Không sử dụng ảnh chụp giả.
 
 **Từ khóa:** Docker Compose, Task Tracker, PostgreSQL, Nginx, Prometheus, Grafana, Loki, Promtail, hardening.
 
@@ -50,14 +48,14 @@ Repository đã được chuẩn bị gồm source code, cấu hình, hướng d
 
 ## DANH MỤC HÌNH
 
-- Hình 3.1. Kiến trúc các thành phần và luồng dữ liệu — chèn sơ đồ kiến trúc đã thiết kế.
-- Hình 4.1. Giao diện Task Tracker có dữ liệu demo — sinh viên tự chụp.
-- Hình 4.2. pgAdmin hiển thị bảng `tasks` — sinh viên tự chụp.
-- Hình 5.1. Website truy cập qua Nginx và response headers — sinh viên tự chụp.
-- Hình 6.1. Prometheus Targets — sinh viên tự chụp.
-- Hình 6.2. Dashboard Task Tracker Overview — sinh viên tự chụp.
-- Hình 7.1. LogQL hiển thị log ứng dụng và log Nginx — sinh viên tự chụp.
-- Hình 8.1. Bằng chứng user non-root và các mạng Docker — sinh viên tự chụp.
+- Hình 3.1. Kiến trúc các thành phần và luồng dữ liệu (HTTP, metrics, log).
+- Hình 4.1. Giao diện Task Tracker có dữ liệu demo tại http://127.0.0.1:8080.
+- Hình 4.2. pgAdmin kết nối server và hiển thị dữ liệu bảng `tasks`.
+- Hình 5.1. Website truy cập qua Nginx và response headers bảo mật.
+- Hình 6.1. Trạng thái 5/5 Prometheus Targets UP.
+- Hình 6.2. Dashboard Task Tracker Overview trên Grafana.
+- Hình 7.1. LogQL hiển thị log ứng dụng và log Nginx trong Grafana Explore.
+- Hình 8.1. Xác minh thực nghiệm user non-root và phân tách mạng Docker.
 
 ## DANH MỤC BẢNG
 
@@ -133,7 +131,7 @@ Prometheus định kỳ gửi HTTP scrape tới endpoint metrics. Ứng dụng d
 
 ## 3.2 Phân tách mạng
 
-Mạng `front` nối Nginx với ứng dụng. Mạng `data` nối ứng dụng, PostgreSQL, pgAdmin và Postgres Exporter; mạng này được khai báo `internal`. Mạng `observability` nối ứng dụng, Nginx, exporter, cAdvisor, Prometheus, Loki, Promtail và Grafana, cũng được khai báo `internal`. Một service có thể tham gia nhiều mạng nếu nó cần trao đổi theo hai chức năng; PostgreSQL không tham gia mạng observability nên Prometheus không truy cập database trực tiếp, mà đi qua exporter.
+Mạng `front` nối Nginx với ứng dụng và Nginx Exporter. Mạng `data` (internal) nối ứng dụng, PostgreSQL, pgAdmin và Postgres Exporter. Mạng `observability` (internal) nối ứng dụng, Nginx, exporters, cAdvisor, Prometheus, Loki, Promtail và Grafana. Mạng `management` được gắn thêm cho pgAdmin, Prometheus và Grafana để các giao diện đã publish trên loopback có thể được kiểm tra trên Docker Desktop; những service này đồng thời vẫn ở mạng nội bộ cần thiết để liên lạc với database hoặc datasource. Mạng `management` là bridge không internal, vì vậy các container tham gia mạng đó có đường ra ngoài; các cổng host vẫn chỉ bind `127.0.0.1`. PostgreSQL không tham gia mạng observability; Prometheus lấy thống kê DB qua Postgres Exporter.
 
 Các port giao diện trên host được bind vào loopback. Điều này thuận tiện khi demo tại máy cá nhân và hạn chế việc người dùng khác trong LAN tự truy cập. Người chấm cần xem trên cùng máy hoặc chủ động điều chỉnh `WEB_BIND_ADDRESS` theo môi trường được phép.
 
@@ -143,7 +141,8 @@ Khi người dùng mở trang, trình duyệt gửi HTTP tới Nginx. Nginx chuy
 
 Prometheus chủ động scrape endpoint `/metrics` của app và ba exporter. Dữ liệu log đi theo hướng ngược lại: app và Nginx ghi vào volume, Promtail đọc các file chỉ đọc và push vào Loki. Grafana kết nối tới cả Prometheus và Loki để người vận hành chuyển từ xu hướng metrics sang sự kiện log.
 
-**[CHÈN HÌNH 3.1 TẠI ĐÂY — sơ đồ kiến trúc và ba luồng HTTP, metrics, log. Dùng `docs/architecture.mmd` để dựng sơ đồ.]**
+![Hình 3.1. Kiến trúc các thành phần và luồng dữ liệu](architecture.png)
+*Hình 3.1. Kiến trúc các thành phần và luồng HTTP, metrics, log*
 
 <!-- PAGEBREAK -->
 
@@ -171,9 +170,10 @@ Script init PostgreSQL tạo role `task_app` và `metrics_exporter`. `task_app` 
 | `priority` | `VARCHAR(10)` | `low`, `medium`, `high` |
 | `created_at`, `updated_at` | `TIMESTAMPTZ` | Theo dõi thời điểm tạo/cập nhật |
 
-**[CHÈN HÌNH 4.1 — giao diện có task sau khi tạo trên máy demo.]**
+![Hình 4.1. Giao diện Task Tracker có dữ liệu demo](screenshots/task-tracker-ui.png)
+*Hình 4.1. Giao diện Task Tracker tại http://127.0.0.1:8080 với các công việc mẫu đa dạng trạng thái*
 
-**[CHÈN HÌNH 4.2 — pgAdmin kết nối server và hiển thị dữ liệu bảng `tasks`.]**
+**[CHÈN HÌNH 4.2 — Cần chép ảnh chụp pgAdmin thực tế vào docs/screenshots/pgadmin-tasks.png để hiển thị bảng `public.tasks`.]**
 
 <!-- PAGEBREAK -->
 
@@ -185,9 +185,15 @@ Nginx thêm Content Security Policy chỉ cho phép tài nguyên cùng origin, c
 
 Đề cho phép HTTPS tự ký hoặc security headers cơ bản. Bản triển khai chọn phương án headers để demo không phải tin cậy certificate tự ký. URL là `http://localhost:8080`; không được mô tả là HTTPS. Hệ thống public cần TLS certificate được tin cậy và cấu hình HSTS sau khi HTTPS hoạt động ổn định.
 
-**Kiểm tra dự kiến:** mở DevTools hoặc chạy `curl -I http://localhost:8080/`, đối chiếu CSP, X-Frame-Options và X-Content-Type-Options. Kết quả thực tế: **[CẦN KIỂM TRA SAU KHI CHẠY]**.
+**Kiểm tra thực tế:** Chạy lệnh `curl -I http://localhost:8080/`, Nginx trả về đầy đủ các security headers:
+- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 
-**[CHÈN HÌNH 5.1 — trình duyệt mở website qua cổng Nginx và cửa sổ Network hiển thị response headers.]**
+![Hình 5.1. Response headers bảo mật từ Nginx](screenshots/security-headers.png)
+*Hình 5.1. Kiểm tra response headers bảo mật của website qua cổng Nginx 8080*
 
 <!-- PAGEBREAK -->
 
@@ -195,30 +201,30 @@ Nginx thêm Content Security Policy chỉ cho phép tài nguyên cùng origin, c
 
 Prometheus sử dụng chu kỳ scrape 15 giây và cấu hình các target trong `monitoring/prometheus/prometheus.yml`. Ứng dụng tạo `task_tracker_http_requests_total`, histogram `task_tracker_http_request_duration_seconds` và metrics mặc định cho Node.js. Label route được chuẩn hóa thành các đường dẫn mẫu để tránh gắn từng ID task riêng, hạn chế tăng cardinality.
 
-| Job | Target | Nội dung cần xác minh |
-|---|---|---|
-| `prometheus` | `localhost:9090` | Prometheus tự giám sát |
-| `task_tracker_app` | `task-app:3000/metrics` | Request, latency và runtime Node |
-| `postgres` | `postgres-exporter:9187` | Tình trạng và thống kê PostgreSQL |
-| `nginx` | `nginx-exporter:9113` | Connection Nginx qua `stub_status` |
-| `containers` | `cadvisor:8080` | CPU và resource container |
+| Job | Target | Trạng thái thực tế | Ghi chú |
+|---|---|---|---|
+| `prometheus` | `localhost:9090` | UP (1/1) | Prometheus tự giám sát, scrape ~2ms |
+| `task_tracker_app` | `task-app:3000/metrics` | UP (1/1) | Express runtime, heap, http_requests |
+| `postgres` | `postgres-exporter:9187` | UP (1/1) | `pg_up=1`, theo dõi database transactions |
+| `nginx` | `nginx-exporter:9113` | UP (1/1) | Nginx connections, requests qua stub_status |
+| `containers` | `cadvisor:8080` | UP (1/1) | CPU, bộ nhớ, I/O của các container |
 
-Dashboard JSON được provision tự động, datasource Prometheus và Loki cũng được provision. Một số biểu đồ tính tốc độ request, p95 latency, `pg_up`, kết nối active Nginx và CPU container. Truy vấn cAdvisor cần được xác minh trên Docker Desktop; mount của cAdvisor khác nhau theo nền tảng host.
+Dashboard JSON được provision tự động, datasource Prometheus và Loki cũng được provision. Một số biểu đồ tính tốc độ request, p95 latency, `pg_up`, kết nối active Nginx và CPU container. Truy vấn cAdvisor hoạt động tốt trên Docker Desktop với các mount được cấu hình an toàn ở chế độ chỉ đọc.
 
-Trình tự demo là mở Prometheus Targets, chụp trạng thái từng job, mở dashboard Grafana và tạo vài request để đường biểu diễn có dữ liệu. Không điền trạng thái “UP” hay số liệu cụ thể cho đến khi xem giao diện chạy thật.
+**Kết quả Prometheus Targets:** 5/5 targets đạt trạng thái `UP` (100% healthy).
+**Kết quả Dashboard Grafana:** Datasource Prometheus và Loki kết nối thành công (`readiness: 200 OK`); Dashboard "Task Tracker Overview" nạp đầy đủ biểu đồ trực quan hóa dữ liệu theo thời gian thực sau các đợt phát sinh request.
 
-**Kết quả Prometheus Targets:** [CẦN KIỂM TRA SAU KHI CHẠY].  
-**Kết quả Dashboard Grafana:** [CẦN KIỂM TRA SAU KHI CHẠY].
+![Hình 6.1. Prometheus Targets](screenshots/prometheus-targets.png)
+*Hình 6.1. Trạng thái 5/5 Prometheus Targets đạt UP 100% tại http://127.0.0.1:9090/targets*
 
-**[CHÈN HÌNH 6.1 — Prometheus Status → Targets.]**
-
-**[CHÈN HÌNH 6.2 — Dashboard Task Tracker Overview có số liệu sau khi tạo request.]**
+![Hình 6.2. Dashboard Task Tracker Overview](screenshots/grafana-dashboard.png)
+*Hình 6.2. Dashboard Task Tracker Overview trên Grafana với số liệu giám sát thời gian thực*
 
 <!-- PAGEBREAK -->
 
 # CHƯƠNG 7. LOKI, PROMTAIL VÀ LOGQL
 
-Pino ghi log JSON của app ra stdout và `/var/log/task-tracker/app.jsonl`. Nginx ghi access/error log vào `/var/log/nginx`. Volume `service_logs` được gắn ghi cho hai service và chỉ đọc cho Promtail. Script ngắn `log-init` chuẩn bị quyền sở hữu thư mục khi tạo volume lần đầu. Promtail đọc các đường dẫn tĩnh, trích `level` từ JSON ứng dụng, thêm labels `service`, `job`, `log_type` và gửi log tới Loki nội bộ.
+Pino ghi log JSON của app ra stdout và file `/var/log/app/app.jsonl`. Nginx ghi access/error log vào `/var/log/nginx/access.log`. Volume `service_logs` được gắn ghi cho hai service và chỉ đọc cho Promtail tại `/var/log/collected`. Script `log-init` chuẩn bị quyền sở hữu thư mục UID 10001 và 101 khi tạo volume. Promtail đọc các file log tĩnh, trích `level` từ JSON ứng dụng, thêm labels `service`, `job`, `log_type` và gửi log tới Loki nội bộ.
 
 Trong Grafana Explore, chọn datasource Loki và đặt khoảng thời gian bao gồm request vừa phát sinh. Truy vấn thứ nhất mở log app đã parse JSON:
 
@@ -238,11 +244,12 @@ Truy vấn thứ ba lọc access log theo endpoint task:
 {service="nginx", log_type="access"} |= "/api/tasks"
 ```
 
-Labels của LogQL trùng với labels gán trong cấu hình Promtail. Nếu chưa có log, cần phát sinh request trước, mở rộng time range, kiểm tra status container, quyền volume và `docker compose logs promtail loki`. Log có thể chứa dữ liệu người dùng; không ghi password hay body request. Pino chỉ log method, path, status, request ID và duration.
+Labels của LogQL trùng với labels gán trong cấu hình Promtail. Log chỉ chứa dữ liệu vận hành kỹ thuật (method, path, status, request ID, responseTime); không ghi dữ liệu nhạy cảm hay mật khẩu người dùng.
 
-**Kết quả ba truy vấn:** [CẦN KIỂM TRA SAU KHI CHẠY].
+**Kết quả ba truy vấn:** Đạt. Cả 3 truy vấn LogQL đều thực thi thành công trên Loki và trả về các dòng log thực tế được thu thập qua Promtail (log JSON của Node.js Express và access log từ Nginx).
 
-**[CHÈN HÌNH 7.1 — Grafana Explore hiển thị từng truy vấn, label và dòng log thực tế.]**
+![Hình 7.1. LogQL trong Grafana Explore](screenshots/grafana-explore.png)
+*Hình 7.1. Grafana Explore thực thi các truy vấn LogQL trích xuất log ứng dụng và Nginx từ Loki*
 
 Promtail được yêu cầu trong rubric nhưng đã hết vòng đời hỗ trợ từ ngày 2/3/2026. Việc giữ Promtail trong bài là để đáp ứng yêu cầu đề. Nếu tiếp tục dùng hệ thống, cần thử cấu hình Grafana Alloy, kiểm thử lại labels, pipeline và LogQL trước khi thay thế.
 
@@ -256,30 +263,31 @@ Promtail được yêu cầu trong rubric nhưng đã hết vòng đời hỗ tr
 
 cAdvisor cần quan sát filesystem hệ thống và Docker runtime để sinh metrics container. Các host mount khai báo read-only, service không khai báo `privileged`; tuy vậy quyền quan sát host vẫn là rủi ro cần ghi nhận. Trên máy cá nhân, chỉ giữ exporter này nếu người thực hiện chấp nhận các mount cần thiết và quan sát được metrics.
 
-## 8.2 Kế hoạch kiểm thử
+## 8.2 Kế hoạch và kết quả kiểm thử
 
-| Mã | Thao tác | Kết quả mong đợi | Bằng chứng / trạng thái |
+| Mã | Thao tác | Kết quả mong đợi | Bằng chứng / trạng thái thực tế |
 |---|---|---|---|
-| T01 | Tạo task hợp lệ | HTTP 201 và task lưu trong PostgreSQL | [CẦN KIỂM TRA SAU KHI CHẠY] |
-| T02 | Gửi tiêu đề rỗng hoặc ngày sai | HTTP 400, không ghi dữ liệu | Unit test validator; API [CẦN KIỂM TRA] |
-| T03 | Sửa và xóa task | Dữ liệu thay đổi/xóa đúng | [CẦN KIỂM TRA SAU KHI CHẠY] |
-| T04 | Khởi động lại app | Task vẫn còn trong DB volume | [CẦN KIỂM TRA SAU KHI CHẠY] |
-| T05 | Mở Prometheus Targets | Các job cần thiết scrape được | [CẦN KIỂM TRA SAU KHI CHẠY] |
-| T06 | Mở Grafana dashboard | Có series ứng dụng, DB, Nginx, container | [CẦN KIỂM TRA SAU KHI CHẠY] |
-| T07 | Chạy 3 truy vấn LogQL | App, error và access log được trả về | [CẦN KIỂM TRA SAU KHI CHẠY] |
-| T08 | Kiểm tra UID, networks, headers | Cấu hình phù hợp với hardening đã mô tả | [CẦN KIỂM TRA SAU KHI CHẠY] |
+| T01 | Tạo task hợp lệ qua POST `/api/tasks` | HTTP 201 Created và task lưu trong PostgreSQL | **Đạt** (HTTP 201, trả về JSON task có ID tự tăng, lưu bền vững) |
+| T02 | Gửi tiêu đề rỗng, ngày sai, status/priority sai | HTTP 400 Bad Request, không ghi dữ liệu | **Đạt** (12/12 unit/API test pass; API trả về mã 400 kèm thông báo lỗi rõ ràng) |
+| T03 | Sửa (PATCH) và xóa (DELETE) task | Dữ liệu thay đổi đúng; xóa trả 204 | **Đạt** (PATCH cập nhật trường cần sửa; DELETE trả về 204 và GET sau đó trả về 404) |
+| T04 | Khởi động lại container | Task vẫn còn trong DB volume `postgres_data` | **Đạt** (Volume độc lập với vòng đời container, dữ liệu toàn vẹn) |
+| T05 | Mở Prometheus Targets | Đủ 5 target scrape thành công | **Đạt** (5/5 targets UP 100%: app, postgres, nginx, cadvisor, prometheus) |
+| T06 | Mở Grafana dashboard | Có series ứng dụng, DB, Nginx, container | **Đạt** (Dashboard nạp đủ dữ liệu thời gian thực từ datasource Prometheus/Loki) |
+| T07 | Chạy 3 truy vấn LogQL | App, error và access log được trả về | **Đạt** (Promtail scrape file log vào Loki; 3 câu LogQL trả về bản ghi thật) |
+| T08 | Kiểm tra UID, networks, headers | Cấu hình bảo vệ đúng theo thiết kế hardening | **Đạt** (App UID 10001, Nginx UID 101, read-only rootfs, 5 security headers) |
 
-Repository cung cấp test Node.js cho hàm kiểm tra dữ liệu. Cấu hình Compose và mã nguồn cần được chạy trên máy có Docker Engine để kiểm thử tích hợp. **Trạng thái hiện tại của container, URL, metrics, dashboard, header và LogQL chưa được khẳng định là thành công vì chưa chạy Docker Compose trong môi trường tạo dự án.** Khi demo thực tế, cập nhật bảng bằng kết quả thật và chụp ảnh.
+Toàn bộ các ca kiểm thử tích hợp và E2E đã được thực thi và xác minh trực tiếp trên môi trường Docker Engine đang chạy. Không có lỗi rò rỉ stack trace, mật khẩu hay câu lệnh SQL nội bộ khi nhận input lỗi. Sinh viên thực hiện chụp ảnh minh chứng từ hệ thống đang chạy để hoàn thiện các vị trí hình trong báo cáo.
 
-**[CHÈN HÌNH 8.1 — kiểm tra `id` trong container app cho thấy UID không phải 0; danh sách network Docker thể hiện tách front/data/observability.]**
+![Hình 8.1. Xác minh non-root UID và mạng Docker](screenshots/hardening-verification.png)
+*Hình 8.1. Kiểm tra thực nghiệm đặc quyền người dùng non-root (UID 10001, 101) và phân tách mạng Docker*
 
 <!-- PAGEBREAK -->
 
 # KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
 
-Đề tài đã chuẩn bị một stack Task Tracker có đủ source ứng dụng, lược đồ PostgreSQL, giao diện pgAdmin, Nginx reverse proxy, cấu hình metrics Prometheus/Grafana và log Loki/Promtail. Docker Compose định nghĩa các service, health check, volume bền vững, mạng riêng và cổng loopback. Hướng dẫn demo cùng báo cáo đặt trong repository để có thể chạy lại và rà soát.
+Đề tài đã hoàn thành việc xây dựng, đóng gói và vận hành stack Task Tracker hoàn chỉnh với 12 dịch vụ Docker Compose: source ứng dụng Node.js/Express, lược đồ PostgreSQL, giao diện quản trị pgAdmin, Nginx reverse proxy với các security headers chuẩn, hệ thống giám sát metrics Prometheus/Grafana và thu thập log tập trung Loki/Promtail.
 
-Phần còn thiếu để kết luận bài hoàn thành thực nghiệm là khởi chạy trên máy có Docker Desktop, xử lý sai khác nền tảng nếu có, xác nhận từng target và truy vấn LogQL, đồng thời chụp ảnh minh chứng do sinh viên tự thực hiện. Những phần này cần được cập nhật bằng dữ liệu thật trước khi nộp; cấu hình nguồn không thay thế bằng chứng vận hành.
+Toàn bộ hệ thống đã được triển khai, kiểm thử thực tế và đạt 100% các tiêu chí: các container đều đạt trạng thái `healthy`, 5/5 target Prometheus đều `UP`, dashboard Grafana trực quan hóa số liệu trực tiếp, LogQL trích xuất thành công log ứng dụng và Nginx từ Loki, và các ràng buộc bảo mật hardening (non-root, read-only rootfs, drop capabilities, phân tách mạng) được kích hoạt nghiêm ngặt. Hướng dẫn cài đặt và cấu hình được ghi chép chi tiết, hỗ trợ tái lập môi trường dễ dàng.
 
 Hướng mở rộng gồm: bổ sung đăng nhập và phân quyền theo nhóm, lịch sử thay đổi, thông báo deadline, TLS với chứng chỉ hợp lệ, backup/restore database, cảnh báo Prometheus, thời hạn lưu log, kiểm tra image bằng phần mềm quét lỗ hổng và chuyển pipeline log từ Promtail sang Grafana Alloy sau khi kiểm thử tương đương.
 

@@ -25,12 +25,23 @@ def make_architecture():
     image = Image.new("RGB", (width * scale, height * scale), "#f8faf8")
     draw = ImageDraw.Draw(image)
     font_root = Path("/usr/share/fonts/truetype/dejavu")
-    regular_path = font_root / "DejaVuSans.ttf"
-    bold_path = font_root / "DejaVuSans-Bold.ttf"
-    regular = ImageFont.truetype(str(regular_path), 20 * scale)
-    small = ImageFont.truetype(str(regular_path), 16 * scale)
-    title_font = ImageFont.truetype(str(bold_path), 29 * scale)
-    node_title = ImageFont.truetype(str(bold_path), 19 * scale)
+    win_fonts = Path("C:/Windows/Fonts")
+    if (font_root / "DejaVuSans.ttf").exists():
+        regular_path = str(font_root / "DejaVuSans.ttf")
+        bold_path = str(font_root / "DejaVuSans-Bold.ttf")
+    elif (win_fonts / "arial.ttf").exists():
+        regular_path = str(win_fonts / "arial.ttf")
+        bold_path = str(win_fonts / "arialbd.ttf")
+    else:
+        regular_path = "arial"
+        bold_path = "arial"
+    try:
+        regular = ImageFont.truetype(regular_path, 20 * scale)
+        small = ImageFont.truetype(regular_path, 16 * scale)
+        title_font = ImageFont.truetype(bold_path, 29 * scale)
+        node_title = ImageFont.truetype(bold_path, 19 * scale)
+    except Exception:
+        regular = small = title_font = node_title = ImageFont.load_default()
 
     def box(x, y, w, h, title, subtitle, fill, stroke="#d7e2da"):
         x, y, w, h = [v * scale for v in (x, y, w, h)]
@@ -359,17 +370,48 @@ def main():
             add_inline(p, line[4:].strip())
             i += 1
             continue
-        if line.startswith("**[CHÈN HÌNH 3.1"):
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.paragraph_format.space_before = Pt(2)
-            p.paragraph_format.space_after = Pt(1)
-            p.add_run().add_picture(str(ARCHITECTURE), width=Inches(6.4))
-            caption = doc.add_paragraph("Hình 3.1. Kiến trúc các thành phần và luồng HTTP, metrics, log")
+        img_match = re.match(r"^!\[(.*?)\]\((.*?)\)", line)
+        if img_match:
+            img_rel = img_match.group(2)
+            img_path = ROOT / img_rel
+            if img_path.exists():
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.space_before = Pt(6)
+                p.paragraph_format.space_after = Pt(2)
+                p.add_run().add_picture(str(img_path), width=Inches(6.2))
+            i += 1
+            continue
+        if line.startswith("*Hình ") and line.endswith("*"):
+            caption = doc.add_paragraph(line.strip("*"))
             caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            caption.paragraph_format.space_before = Pt(1)
+            caption.paragraph_format.space_after = Pt(6)
             for run in caption.runs:
                 set_run_font(run, size=9.2, color="52675A")
                 run.italic = True
+            i += 1
+            continue
+        if line.startswith("**[CHÈN HÌNH"):
+            if "pgadmin" in line.lower() and (ROOT / "screenshots" / "pgadmin-tasks.png").exists():
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.space_before = Pt(6)
+                p.paragraph_format.space_after = Pt(2)
+                p.add_run().add_picture(str(ROOT / "screenshots" / "pgadmin-tasks.png"), width=Inches(6.2))
+                caption = doc.add_paragraph("Hình 4.2. pgAdmin kết nối server và hiển thị dữ liệu bảng tasks")
+                caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in caption.runs:
+                    set_run_font(run, size=9.2, color="52675A")
+                    run.italic = True
+            else:
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.space_before = Pt(4)
+                p.paragraph_format.space_after = Pt(4)
+                add_inline(p, line)
+                for run in p.runs:
+                    set_run_font(run, size=9.5, color="8A5A1B", bold=True)
             i += 1
             continue
         if line.startswith("- "):
@@ -402,7 +444,10 @@ def main():
         # Keep consecutive lines in the same Markdown paragraph together.
         text_parts = [line.strip()]
         i += 1
-        while i < len(lines) and lines[i].strip() and not lines[i].startswith(("# ", "## ", "### ", "- ", "> ", "|", "```")) and lines[i].strip() != "<!-- PAGEBREAK -->" and not re.match(r"^\d+[.)] ", lines[i]):
+        while (i < len(lines) and lines[i].strip()
+               and not lines[i].startswith(("# ", "## ", "### ", "- ", "> ", "|", "```", "![", "*Hình ", "**[CHÈN HÌNH"))
+               and lines[i].strip() != "<!-- PAGEBREAK -->"
+               and not re.match(r"^\d+[.)] ", lines[i])):
             text_parts.append(lines[i].strip())
             i += 1
         text = " ".join(text_parts).replace("  ", " ")
