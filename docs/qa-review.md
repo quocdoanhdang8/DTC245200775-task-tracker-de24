@@ -47,3 +47,45 @@ node scripts/test_persistence.js
 Kiểm tra lại `/health`, năm Prometheus targets và dashboard theo README. Không tạo lại `.env`, không dùng `down -v` và không chạy capture nếu muốn giữ chín ảnh chụp tay hiện tại.
 
 Tên repository có MSSV `DTC245200775`; username GitHub hiện là `quocdoanhdang8`. Nếu yêu cầu “đặt tên theo mã số SV” áp dụng cho chính username tài khoản, cần đối chiếu với giảng viên. Lần rà soát này không đổi tên tài khoản hoặc URL repository.
+
+## Hướng dẫn kiểm thử bổ sung (tùy chọn)
+
+Các công cụ dưới đây phục vụ bảo trì và hồi quy; không phải yêu cầu chức năng bổ sung của Đề 24. Hướng dẫn khởi chạy và demo theo đề nằm trong [README](../README.md#7-kiểm-tra-và-demo-theo-yêu-cầu-đề-24).
+
+### Unit/API và harness
+
+Cài Node.js 22+ trên host để chạy script; cài dependencies bằng lockfile:
+
+```powershell
+npm --prefix app ci --ignore-scripts
+npm --prefix app test
+node --test scripts/qa_harness.test.js
+npm --prefix app audit --omit=dev
+```
+
+Bộ ứng dụng có **12 ca Unit/API** với database giả lập. Harness bổ sung **20 ca hồi quy**: DATE theo múi giờ, ngày không hợp lệ, ID tràn BIGINT, HTTP 400/413/415, log/metrics của request bị từ chối, giới hạn nhãn metrics, sinh `.env`, Loki có/rỗng dữ liệu và retry, parser `.env`, marker thay đổi, cleanup E2E và exit codes.
+
+**Harness dùng HTTP fixtures có chủ đích; kết quả của nó không thay cho xác minh Docker/PostgreSQL/Grafana/Loki thật.** Các lệnh runtime dưới đây cần stack đang chạy trên máy:
+
+```powershell
+node scripts/verify_e2e.js
+node scripts/check_loki.js
+node scripts/test_persistence.js
+```
+
+E2E kiểm tra tám bước qua Nginx, tạo task riêng và dọn task. Loki yêu cầu cả ba query có log entries; tự phát sinh GET an toàn và retry có giới hạn. Kiểm tra nhánh rỗng bằng `node scripts/check_loki.js --test-empty`: **exit 1 là kết quả mong đợi**, không phải runtime đang hỏng.
+
+Persistence tự restart `db` và `task-app`; marker còn dở không bị ghi đè. Nếu phiên trước bị ngắt, dùng `node scripts/persistence_step2.js` để xác minh/dọn marker trước khi tạo mới. Có thể chạy thủ công: `node scripts/persistence_step1.js`, `docker compose restart db task-app`, `node scripts/persistence_step2.js`. Script chỉ xác minh restart đã thực hiện, không thay thế kiểm thử backup/restore.
+
+### Kiểm tra giao diện bằng Chromium (tùy chọn)
+
+`scripts/browser_smoke.js` chạy frontend thật trong Chromium với Express và database fixture cách ly: tạo/sửa/xóa, deadline, lọc, checkbox, rollback khi PATCH lỗi, escape HTML và ba chiều rộng 1440/768/390 px. Không chạm task thật. Playwright chỉ là công cụ kiểm thử tùy chọn, không phải dependency của image app:
+
+```powershell
+$browserTools = Join-Path $env:TEMP 'de24-browser-tools'
+npm install --prefix $browserTools --no-save playwright
+$env:PLAYWRIGHT_MODULE = Join-Path $browserTools 'node_modules\playwright'
+node "$env:PLAYWRIGHT_MODULE\cli.js" install chromium
+node scripts/browser_smoke.js
+Remove-Item Env:PLAYWRIGHT_MODULE
+```

@@ -130,43 +130,35 @@ docker compose exec -T task-app id
 docker compose exec -T nginx id
 ```
 
-## 7. Kiểm thử và harness
+## 7. Kiểm tra và demo theo yêu cầu Đề 24
 
-Cài Node.js 22+ trên host để chạy script; cài dependencies bằng lockfile:
+Sau khi khởi động bằng Docker Compose, demo lần lượt các thành phần sau:
+
+| Yêu cầu | Thao tác và kết quả cần kiểm tra |
+|---|---|
+| Ứng dụng quản lý công việc | Mở website qua Nginx tại cổng 8080; tạo task có deadline, sửa thông tin, đổi trạng thái, lọc và xóa task |
+| PostgreSQL và pgAdmin | Mở pgAdmin tại cổng 5050, kết nối server `db`, xem bảng `public.tasks` và đối chiếu dữ liệu với website |
+| Nginx reverse proxy | Truy cập ứng dụng qua cổng 8080; chạy lệnh kiểm tra năm security headers ở mục 6 |
+| Prometheus và Grafana | Xác minh năm targets UP, `pg_up=1`, `nginx_up=1`; mở dashboard có dữ liệu container, web và database |
+| Loki và Promtail | Trong Grafana Explore, thực hiện ba truy vấn LogQL ở mục 5 và xem log request vừa phát sinh |
+| Hardening | Đối chiếu user non-root, filesystem read-only, capabilities, mạng internal, cổng loopback và quyền DB theo mục 6 |
+| GitHub và báo cáo | Đối chiếu ba commit triển khai ở mục 10; mở báo cáo có bìa sinh viên, kiến trúc và ảnh minh chứng ở mục 9 |
+
+### Kiểm thử tự động bổ sung (tùy chọn)
+
+Các công cụ sau hỗ trợ kiểm tra lại kết quả; không bắt buộc để khởi chạy hệ thống hoặc demo. Cần Node.js 22+ trên host. Tất cả dịch vụ của hệ thống vẫn chạy bằng Docker Compose.
 
 ```powershell
 npm --prefix app ci --ignore-scripts
 npm --prefix app test
-node --test scripts/qa_harness.test.js
-npm --prefix app audit --omit=dev
-```
-
-Bộ ứng dụng có **12 ca Unit/API** với database giả lập. Harness bổ sung **20 ca hồi quy**: DATE theo múi giờ, ngày không hợp lệ, ID tràn BIGINT, HTTP 400/413/415, log/metrics của request bị từ chối, giới hạn nhãn metrics, sinh `.env`, Loki có/rỗng dữ liệu và retry, parser `.env`, marker thay đổi, cleanup E2E và exit codes.
-
-**Harness dùng HTTP fixtures có chủ đích; kết quả của nó không thay cho xác minh Docker/PostgreSQL/Grafana/Loki thật.** Các lệnh runtime dưới đây cần stack đang chạy trên máy:
-
-```powershell
 node scripts/verify_e2e.js
 node scripts/check_loki.js
 node scripts/test_persistence.js
 ```
 
-E2E kiểm tra tám bước qua Nginx, tạo task riêng và dọn task. Loki yêu cầu cả ba query có log entries; tự phát sinh GET an toàn và retry có giới hạn. Kiểm tra nhánh rỗng bằng `node scripts/check_loki.js --test-empty`: **exit 1 là kết quả mong đợi**, không phải runtime đang hỏng.
+Unit/API có 12 ca dùng database giả lập. E2E kiểm tra tám bước qua Nginx và dọn task thử; Loki yêu cầu ba truy vấn có log thật. Persistence **tự restart `db` và `task-app`** để kiểm tra task còn nguyên vẹn rồi dọn task; nếu marker phiên trước còn dở, chạy `node scripts/persistence_step2.js` để xác minh/dọn trước khi thử lại.
 
-Persistence tự restart `db` và `task-app`; marker còn dở không bị ghi đè. Nếu phiên trước bị ngắt, dùng `node scripts/persistence_step2.js` để xác minh/dọn marker trước khi tạo mới. Có thể chạy thủ công: `node scripts/persistence_step1.js`, `docker compose restart db task-app`, `node scripts/persistence_step2.js`. Script chỉ xác minh restart đã thực hiện, không thay thế kiểm thử backup/restore.
-
-### Kiểm tra giao diện bằng Chromium (tùy chọn)
-
-`scripts/browser_smoke.js` chạy frontend thật trong Chromium với Express và database fixture cách ly: tạo/sửa/xóa, deadline, lọc, checkbox, rollback khi PATCH lỗi, escape HTML và ba chiều rộng 1440/768/390 px. Không chạm task thật. Playwright chỉ là công cụ kiểm thử tùy chọn, không phải dependency của image app:
-
-```powershell
-$browserTools = Join-Path $env:TEMP 'de24-browser-tools'
-npm install --prefix $browserTools --no-save playwright
-$env:PLAYWRIGHT_MODULE = Join-Path $browserTools 'node_modules\playwright'
-node "$env:PLAYWRIGHT_MODULE\cli.js" install chromium
-node scripts/browser_smoke.js
-Remove-Item Env:PLAYWRIGHT_MODULE
-```
+Chi tiết harness hồi quy, Chromium và cách xử lý các tình huống kiểm thử nằm trong [tài liệu kiểm thử bổ sung](docs/qa-review.md#hướng-dẫn-kiểm-thử-bổ-sung-tùy-chọn). Kết quả dùng database/HTTP giả lập không thay thế demo và kiểm chứng các dịch vụ thật nêu trên.
 
 ## 8. Dừng và xử lý lỗi
 
