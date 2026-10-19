@@ -80,7 +80,9 @@ document.querySelector("#cancel-edit").addEventListener("click", resetForm);
 filter.addEventListener("change", loadTasks);
 list.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
-  if (!button) return;
+  // Checkbox changes are handled below. Refreshing here removes the checkbox
+  // before its change event can bubble, so completion would never be saved.
+  if (!button || button.dataset.action === "complete") return;
   const task = tasks.find((item) => String(item.id) === button.dataset.id);
   if (!task) return;
   try {
@@ -108,7 +110,10 @@ list.addEventListener("change", async (event) => {
   try {
     await api(`/api/tasks/${task.id}`, { method: "PATCH", body: JSON.stringify({ status: checkbox.checked ? "done" : "todo" }) });
     await loadTasks();
-  } catch (error) { window.alert(error.message); }
+  } catch (error) {
+    checkbox.checked = task.status === "done";
+    window.alert(error.message);
+  }
 });
 
 loadTasks();

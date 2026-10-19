@@ -1,7 +1,7 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const express = require("express");
-const { Pool } = require("pg");
+const { Pool, types } = require("pg");
 const pino = require("pino");
 const client = require("prom-client");
 const { randomUUID } = require("node:crypto");
@@ -35,6 +35,14 @@ function createLogger() {
 const logger = createLogger();
 
 const pool = new Pool({
+  // A PostgreSQL DATE is a calendar day, not local midnight converted to UTC.
+  // Keep YYYY-MM-DD unchanged on Windows and in every container timezone.
+  types: {
+    getTypeParser(oid, format) {
+      if (oid === types.builtins.DATE && format !== "binary") return (value) => value;
+      return types.getTypeParser(oid, format);
+    }
+  },
   host: process.env.PGHOST || "127.0.0.1",
   port: Number(process.env.PGPORT || 5432),
   database: process.env.PGDATABASE || "task_tracker",
@@ -44,6 +52,7 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
 });
+pool.on("error", (error) => logger.error({ err: error }, "idle_database_connection_failed"));
 
 const registry = new client.Registry();
 client.collectDefaultMetrics({ register: registry, prefix: "task_tracker_" });
@@ -62,14 +71,18 @@ const httpDuration = new client.Histogram({
 });
 
 function routeLabel(req) {
-  if (req.path.startsWith("/api/tasks/") && req.path !== "/api/tasks/") return "/api/tasks/:id";
-  return req.path;
+  if (req.route) return req.route.path;
+  if (["/", "/app.js", "/styles.css"].includes(req.path)) return req.path;
+  return "unmatched";
+}
+
+function validTaskId(value) {
+  return /^[1-9]\d{0,18}$/.test(value) && BigInt(value) <= 9223372036854775807n;
 }
 
 function createApp({ database = pool, log = logger, metrics = registry } = {}) {
   const app = express();
   app.disable("x-powered-by");
-  app.use(express.json({ limit: "32kb" }));
   app.use((req, res, next) => {
     const requestId = randomUUID();
     const started = process.hrtime.bigint();
@@ -84,6 +97,8 @@ function createApp({ database = pool, log = logger, metrics = registry } = {}) {
     });
     next();
   });
+  // Record rejected JSON/body-size requests in metrics and centralized logs too.
+  app.use(express.json({ limit: "32kb" }));
 
   app.get("/health", async (_req, res) => {
     try {
@@ -129,7 +144,7 @@ function createApp({ database = pool, log = logger, metrics = registry } = {}) {
   });
 
   app.patch("/api/tasks/:id", async (req, res, next) => {
-    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: "Task ID must be an integer." });
+    if (!validTaskId(req.params.id)) return res.status(400).json({ error: "Task ID must be an integer." });
     const { errors, value } = validateTask(req.body, { partial: true });
     if (errors.length) return res.status(400).json({ error: errors.join(" ") });
     const fields = { title: "title", description: "description", dueDate: "due_date", status: "status", priority: "priority" };
@@ -150,7 +165,7 @@ function createApp({ database = pool, log = logger, metrics = registry } = {}) {
   });
 
   app.delete("/api/tasks/:id", async (req, res, next) => {
-    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: "Task ID must be an integer." });
+    if (!validTaskId(req.params.id)) return res.status(400).json({ error: "Task ID must be an integer." });
     try {
       const result = await database.query("DELETE FROM tasks WHERE id = $1", [req.params.id]);
       if (!result.rowCount) return res.status(404).json({ error: "Task not found." });
@@ -159,11 +174,18 @@ function createApp({ database = pool, log = logger, metrics = registry } = {}) {
   });
 
   app.use(express.static(path.join(__dirname, "../public"), { maxAge: "1h", etag: true }));
+  app.use((_req, res) => res.status(404).json({ error: "Route not found." }));
   app.use((error, _req, res, _next) => {
     log.error({ err: error }, "request_failed");
     if (res.headersSent) return;
-    const status = error.type === "entity.parse.failed" ? 400 : 500;
-    res.status(status).json({ error: status === 400 ? "Malformed JSON request." : "Internal server error." });
+    const errors = {
+      "entity.parse.failed": [400, "Malformed JSON request."],
+      "entity.too.large": [413, "Request body is too large."],
+      "encoding.unsupported": [415, "Unsupported request encoding."],
+      "charset.unsupported": [415, "Unsupported request charset."]
+    };
+    const [status, message] = errors[error.type] || [500, "Internal server error."];
+    res.status(status).json({ error: message });
   });
   return app;
 }

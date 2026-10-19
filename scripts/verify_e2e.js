@@ -119,9 +119,13 @@ async function main() {
     if (createdId && !isDeleted) {
       try {
         console.log(`   [Cleanup] Đang dọn dẹp task ${createdId}...`);
-        const cleanupRes = await fetch(`${baseUrl}/api/tasks/${createdId}`, { method: "DELETE" });
+        const cleanupRes = await fetch(`${baseUrl}/api/tasks/${createdId}`, {
+          method: "DELETE", signal: AbortSignal.timeout(10000)
+        });
         if (cleanupRes.status === 204) {
           console.log(`   [Cleanup] Đã dọn dẹp task ${createdId} thành công.`);
+        } else {
+          console.warn(`   [Cleanup Warning] HTTP ${cleanupRes.status}; kiểm tra lại task ${createdId}.`);
         }
       } catch (cleanupErr) {
         console.warn("   [Cleanup Warning] Không thể dọn dẹp task:", cleanupErr.message);

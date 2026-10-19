@@ -16,6 +16,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const { parseEnv } = require("node:util");
 
 function getCredentials() {
   let user = process.env.GRAFANA_ADMIN_USER;
@@ -24,15 +25,9 @@ function getCredentials() {
   if (!user || !pass) {
     const envPath = path.resolve(".env");
     if (fs.existsSync(envPath)) {
-      const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) continue;
-        const [k, ...vParts] = trimmed.split("=");
-        const v = vParts.join("=").trim();
-        if (k === "GRAFANA_ADMIN_USER" && !user) user = v;
-        if (k === "GRAFANA_ADMIN_PASSWORD" && !pass) pass = v;
-      }
+      const values = parseEnv(fs.readFileSync(envPath, "utf8"));
+      user ||= values.GRAFANA_ADMIN_USER;
+      pass ||= values.GRAFANA_ADMIN_PASSWORD;
     }
   }
 

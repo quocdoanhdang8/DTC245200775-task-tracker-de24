@@ -1,0 +1,25 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> task-tracker-de24@1.0.0 test
+> node --test
+
+✔ GET /health returns 200 and ok when database is healthy (30.732969ms)
+✔ GET /health returns 503 when database fails (8.624238ms)
+✔ GET /metrics returns 200 with Prometheus text metrics (8.62508ms)
+✔ Full CRUD flow: create, read, filter, search, update, delete (38.18034ms)
+✔ Input validation rejects invalid requests with 400 (24.064602ms)
+✔ Returns 404 when updating or deleting a nonexistent task (4.733098ms)
+✔ Returns 500 without leaking database details or stack trace on DB error (6.44732ms)
+✔ accepts a valid task and normalizes optional values (2.223729ms)
+✔ rejects a title that is blank or too long (0.29253ms)
+✔ rejects unsupported status, priority, and malformed date (0.193371ms)
+✔ partial updates validate only submitted fields (0.294363ms)
+✔ accepts a task without dueDate and defaults dueDate to null (0.226141ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 312.65007

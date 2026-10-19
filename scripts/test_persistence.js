@@ -18,6 +18,9 @@ const baseUrl = process.env.APP_BASE_URL || "http://127.0.0.1:8080";
 const markerFilePath = path.resolve(".persistence_marker.tmp");
 
 async function createMarker() {
+  if (fs.existsSync(markerFilePath)) {
+    throw new Error("Marker của lần chạy trước vẫn còn. Chạy --step2 để xác minh/dọn trước; không ghi đè marker cũ.");
+  }
   console.log("=== BƯỚC 1: TẠO MARKER TASK TRƯỚC KHI RESTART ===");
   const markerTitle = `PERSISTENCE-MARKER-${Date.now()}`;
   console.log(`Đang tạo marker task: "${markerTitle}"...`);
@@ -39,7 +42,8 @@ async function createMarker() {
   const markerId = task.id;
   console.log(`   Marker task đã tạo thành công: ID=${markerId}, title="${task.title}"`);
 
-  fs.writeFileSync(markerFilePath, JSON.stringify({ markerId, markerTitle }), "utf8");
+  const expectedTask = Object.fromEntries(["title", "description", "dueDate", "status", "priority"].map(key => [key, task[key]]));
+  fs.writeFileSync(markerFilePath, JSON.stringify({ markerId, markerTitle, expectedTask }), { encoding: "utf8", flag: "wx" });
   console.log(`   Đã lưu thông tin marker vào ${path.basename(markerFilePath)}.`);
   return { markerId, markerTitle };
 }
@@ -50,7 +54,7 @@ async function verifyAndCleanup() {
     throw new Error(`Không tìm thấy file ${markerFilePath}. Hãy chạy bước 1 trước.`);
   }
 
-  const { markerId, markerTitle } = JSON.parse(fs.readFileSync(markerFilePath, "utf8"));
+  const { markerId, markerTitle, expectedTask } = JSON.parse(fs.readFileSync(markerFilePath, "utf8"));
   console.log(`Đang tìm kiếm marker task ID=${markerId}, title="${markerTitle}"...`);
 
   // Đợi dịch vụ trở lại trạng thái healthy sau restart
@@ -62,7 +66,7 @@ async function verifyAndCleanup() {
         const body = await res.json();
         if (body.status === "ok" && body.database === "connected") {
           healthy = true;
-          console.log(`   Hệ thống đã phục hồi healthy sau ${attempt} giây.`);
+          console.log(`   Hệ thống đã phục hồi healthy tại lần kiểm tra ${attempt}.`);
           break;
         }
       }
@@ -80,6 +84,10 @@ async function verifyAndCleanup() {
   const found = tasks.find(t => t.id === markerId);
 
   assert.ok(found, `Marker task ID ${markerId} PHẢI tồn tại trong cơ sở dữ liệu sau khi restart container!`);
+  // Older marker files contain only ID/title; retain compatibility with --step2.
+  for (const [key, value] of Object.entries(expectedTask || { title: markerTitle, status: "in_progress" })) {
+    assert.equal(found[key], value, `Marker task đã thay đổi trường ${key} sau restart`);
+  }
   console.log(`   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=${found.id}, title="${found.title}", status="${found.status}"!`);
 
   // Dọn dẹp marker task
@@ -97,6 +105,7 @@ async function verifyAndCleanup() {
 
 async function main() {
   const arg = process.argv[2];
+  if (arg && !["--step1", "--step2"].includes(arg)) throw new Error("Chỉ hỗ trợ --step1 hoặc --step2; không restart với tham số không hợp lệ.");
   if (arg === "--step1") {
     await createMarker();
   } else if (arg === "--step2") {
@@ -105,7 +114,7 @@ async function main() {
     // Chạy trọn gói tự động
     await createMarker();
     console.log("\n--- TỰ ĐỘNG KHỞI ĐỘNG LẠI CONTAINER db VÀ task-app ---");
-    execSync("docker compose restart db task-app", { stdio: "inherit" });
+    execSync("docker compose restart db task-app", { stdio: "inherit", timeout: 120000 });
     await new Promise(r => setTimeout(r, 3000));
     await verifyAndCleanup();
   }

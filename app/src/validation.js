@@ -26,7 +26,7 @@ function validateTask(input, { partial = false } = {}) {
 
   if (!partial || Object.hasOwn(input, "dueDate")) {
     if (input.dueDate === null || input.dueDate === "" || input.dueDate === undefined) value.dueDate = null;
-    else if (typeof input.dueDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate) || Number.isNaN(Date.parse(`${input.dueDate}T00:00:00Z`)) || new Date(`${input.dueDate}T00:00:00Z`).toISOString().slice(0, 10) !== input.dueDate) {
+    else if (typeof input.dueDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate) || input.dueDate.startsWith("0000-") || Number.isNaN(Date.parse(`${input.dueDate}T00:00:00Z`)) || new Date(`${input.dueDate}T00:00:00Z`).toISOString().slice(0, 10) !== input.dueDate) {
       errors.push("Due date must use YYYY-MM-DD or be empty.");
     } else value.dueDate = input.dueDate;
   }

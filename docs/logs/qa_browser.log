@@ -1,0 +1,11 @@
+PASS browser: initial empty list
+PASS browser: create, deadline display and HTML escaping
+PASS browser: edit task and preserve deadline
+PASS browser: filter status and restore all tasks
+PASS browser: failed update restores the checkbox state
+PASS browser: toggle completion
+PASS browser: delete and cleanup
+PASS browser: responsive width 1440px
+PASS browser: responsive width 768px
+PASS browser: responsive width 390px
+PASS browser: no uncaught page errors; isolated fixture only, no Docker runtime claim

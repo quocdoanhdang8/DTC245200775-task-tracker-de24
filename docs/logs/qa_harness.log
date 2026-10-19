@@ -1,0 +1,28 @@
+✔ DATE parsing preserves the day independently of timezone (1.212587ms)
+✔ Calendar validation rejects year zero and invalid leap days (0.948449ms)
+✔ Out-of-range task IDs are rejected before database queries (57.85486ms)
+✔ Malformed JSON remains observable in request logs and metrics (14.273195ms)
+✔ Oversized JSON returns 413 without stack traces or database access (4.559377ms)
+✔ Unsupported JSON charset returns 415 (3.738831ms)
+✔ Unknown paths share one metric label rather than unbounded URL labels (39.916275ms)
+✔ Unknown API routes return a safe JSON 404 (3.053018ms)
+✔ Environment generation is private and refuses to overwrite existing credentials (121.37362ms)
+✔ Loki harness counts all streams and completes three populated queries (109.872294ms)
+✔ Loki harness fails on empty data rather than reporting success (116.14486ms)
+✔ Loki harness retries an empty third query and still exits nonzero (10122.926178ms)
+✔ Loki credentials accept quoted .env values and comments (111.662865ms)
+✔ Persistence refuses to overwrite an unfinished marker (63.517083ms)
+✔ Persistence catches mutated marker fields and retains recovery information (129.625178ms)
+✔ Persistence rejects unknown flags before attempting Docker restart (56.833523ms)
+✔ E2E harness rejects an unhealthy upstream (82.70931ms)
+✔ E2E runner completes its eight steps with exactly one deletion (126.480222ms)
+✔ E2E runner cleans its own task after a failed intermediate assertion (121.281123ms)
+✔ Persistence step wrappers verify and clean an unchanged marker (305.8989ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11763.11671

@@ -1,0 +1,211 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+(node:40) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:47) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: GET /health returns 200 and ok when database is healthy
+ok 1 - GET /health returns 200 and ok when database is healthy
+  ---
+  duration_ms: 36.65413
+  type: 'test'
+  ...
+# Subtest: GET /health returns 503 when database fails
+ok 2 - GET /health returns 503 when database fails
+  ---
+  duration_ms: 9.474809
+  type: 'test'
+  ...
+# Subtest: GET /metrics returns 200 with Prometheus text metrics
+ok 3 - GET /metrics returns 200 with Prometheus text metrics
+  ---
+  duration_ms: 11.849604
+  type: 'test'
+  ...
+# Subtest: Full CRUD flow: create, read, filter, search, update, delete
+ok 4 - Full CRUD flow: create, read, filter, search, update, delete
+  ---
+  duration_ms: 42.513844
+  type: 'test'
+  ...
+# Subtest: Input validation rejects invalid requests with 400
+ok 5 - Input validation rejects invalid requests with 400
+  ---
+  duration_ms: 30.622796
+  type: 'test'
+  ...
+# Subtest: Returns 404 when updating or deleting a nonexistent task
+ok 6 - Returns 404 when updating or deleting a nonexistent task
+  ---
+  duration_ms: 7.672033
+  type: 'test'
+  ...
+# Subtest: Returns 500 without leaking database details or stack trace on DB error
+ok 7 - Returns 500 without leaking database details or stack trace on DB error
+  ---
+  duration_ms: 9.4954
+  type: 'test'
+  ...
+# (node:48) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: accepts a valid task and normalizes optional values
+ok 8 - accepts a valid task and normalizes optional values
+  ---
+  duration_ms: 1.421361
+  type: 'test'
+  ...
+# Subtest: rejects a title that is blank or too long
+ok 9 - rejects a title that is blank or too long
+  ---
+  duration_ms: 0.155604
+  type: 'test'
+  ...
+# Subtest: rejects unsupported status, priority, and malformed date
+ok 10 - rejects unsupported status, priority, and malformed date
+  ---
+  duration_ms: 0.164788
+  type: 'test'
+  ...
+# Subtest: partial updates validate only submitted fields
+ok 11 - partial updates validate only submitted fields
+  ---
+  duration_ms: 0.229215
+  type: 'test'
+  ...
+# Subtest: accepts a task without dueDate and defaults dueDate to null
+ok 12 - accepts a task without dueDate and defaults dueDate to null
+  ---
+  duration_ms: 0.275735
+  type: 'test'
+  ...
+# (node:49) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: DATE parsing preserves the day independently of timezone
+ok 13 - DATE parsing preserves the day independently of timezone
+  ---
+  duration_ms: 1.47362
+  type: 'test'
+  ...
+# Subtest: Calendar validation rejects year zero and invalid leap days
+ok 14 - Calendar validation rejects year zero and invalid leap days
+  ---
+  duration_ms: 1.482342
+  type: 'test'
+  ...
+# Subtest: Out-of-range task IDs are rejected before database queries
+ok 15 - Out-of-range task IDs are rejected before database queries
+  ---
+  duration_ms: 73.417493
+  type: 'test'
+  ...
+# Subtest: Malformed JSON remains observable in request logs and metrics
+ok 16 - Malformed JSON remains observable in request logs and metrics
+  ---
+  duration_ms: 22.406233
+  type: 'test'
+  ...
+# Subtest: Oversized JSON returns 413 without stack traces or database access
+ok 17 - Oversized JSON returns 413 without stack traces or database access
+  ---
+  duration_ms: 15.135053
+  type: 'test'
+  ...
+# Subtest: Unsupported JSON charset returns 415
+ok 18 - Unsupported JSON charset returns 415
+  ---
+  duration_ms: 5.92322
+  type: 'test'
+  ...
+# Subtest: Unknown paths share one metric label rather than unbounded URL labels
+ok 19 - Unknown paths share one metric label rather than unbounded URL labels
+  ---
+  duration_ms: 35.720092
+  type: 'test'
+  ...
+# Subtest: Unknown API routes return a safe JSON 404
+ok 20 - Unknown API routes return a safe JSON 404
+  ---
+  duration_ms: 3.600052
+  type: 'test'
+  ...
+# Subtest: Environment generation is private and refuses to overwrite existing credentials
+ok 21 - Environment generation is private and refuses to overwrite existing credentials
+  ---
+  duration_ms: 104.147031
+  type: 'test'
+  ...
+# Subtest: Loki harness counts all streams and completes three populated queries
+ok 22 - Loki harness counts all streams and completes three populated queries
+  ---
+  duration_ms: 115.180442
+  type: 'test'
+  ...
+# Subtest: Loki harness fails on empty data rather than reporting success
+ok 23 - Loki harness fails on empty data rather than reporting success
+  ---
+  duration_ms: 68.231569
+  type: 'test'
+  ...
+# Subtest: Loki harness retries an empty third query and still exits nonzero
+ok 24 - Loki harness retries an empty third query and still exits nonzero
+  ---
+  duration_ms: 10126.36197
+  type: 'test'
+  ...
+# Subtest: Loki credentials accept quoted .env values and comments
+ok 25 - Loki credentials accept quoted .env values and comments
+  ---
+  duration_ms: 120.536728
+  type: 'test'
+  ...
+# Subtest: Persistence refuses to overwrite an unfinished marker
+ok 26 - Persistence refuses to overwrite an unfinished marker
+  ---
+  duration_ms: 51.791081
+  type: 'test'
+  ...
+# Subtest: Persistence catches mutated marker fields and retains recovery information
+ok 27 - Persistence catches mutated marker fields and retains recovery information
+  ---
+  duration_ms: 63.35528
+  type: 'test'
+  ...
+# Subtest: Persistence rejects unknown flags before attempting Docker restart
+ok 28 - Persistence rejects unknown flags before attempting Docker restart
+  ---
+  duration_ms: 51.623143
+  type: 'test'
+  ...
+# Subtest: E2E harness rejects an unhealthy upstream
+ok 29 - E2E harness rejects an unhealthy upstream
+  ---
+  duration_ms: 69.258981
+  type: 'test'
+  ...
+# Subtest: E2E runner completes its eight steps with exactly one deletion
+ok 30 - E2E runner completes its eight steps with exactly one deletion
+  ---
+  duration_ms: 120.826019
+  type: 'test'
+  ...
+# Subtest: E2E runner cleans its own task after a failed intermediate assertion
+ok 31 - E2E runner cleans its own task after a failed intermediate assertion
+  ---
+  duration_ms: 109.101533
+  type: 'test'
+  ...
+# Subtest: Persistence step wrappers verify and clean an unchanged marker
+ok 32 - Persistence step wrappers verify and clean an unchanged marker
+  ---
+  duration_ms: 296.876245
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11638.96323

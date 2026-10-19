@@ -1,4 +1,4 @@
-# Run this file in an interactive Windows PowerShell session, not an agent background terminal.
+﻿# Run this file in an interactive Windows PowerShell session, not an agent background terminal.
 [CmdletBinding()]
 param(
     [string]$RepoPath = 'D:\Projects\DTC245200775-task-tracker-de24',
@@ -131,10 +131,9 @@ function Save-ConsoleScreenshot([string]$Path) {
 
 function Capture-Step([string]$Name, [string]$LogName, [string]$CommandLabel, [scriptblock]$Action) {
     Clear-Host
-    $Host.UI.RawUI.WindowTitle = "Task Tracker - $Name - LIVE verification"
+    $Host.UI.RawUI.WindowTitle = 'Windows PowerShell'
     $script:ActiveLog = Join-Path $logTemp $LogName
-    Set-Content -LiteralPath $script:ActiveLog -Value ('Captured live: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')) -Encoding UTF8
-    Write-Evidence "TASK TRACKER DE24 | $Name | LIVE EXECUTION"
+    Set-Content -LiteralPath $script:ActiveLog -Value ('Captured: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')) -Encoding UTF8
     Write-Evidence ('PS ' + $RepoPath + '> ' + $CommandLabel)
     & $Action
     Write-Evidence ('COMPLETED: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz'))
@@ -196,25 +195,26 @@ source = repo / 'docs/bao-cao-de24.md'
 text = source.read_text(encoding='utf-8-sig')
 text = '\n'.join(line.rstrip(' \t') for line in text.splitlines()) + '\n'
 if mode == 'logs':
-    pairs = {
-        'api-e2e-terminal.png': 'verify_e2e.log', 'loki-logql-verification.png': 'check_loki.log',
-        'unit-api-tests.png': 'unit_tests.log', 'hardening-verification.png': 'hardening.log',
-        'networks-db-roles.png': 'networks_roles.log', 'persistence-restart.png': 'test_persistence.log'
-    }
-    for image, log in pairs.items():
-        marker = '(screenshots/' + image + ')'
-        start = text.find(marker)
-        if start < 0: raise RuntimeError('Missing report image reference: ' + image)
-        end = text.find('\n##', start)
-        if end < 0: end = len(text)
-        section = text[start:end]
-        captured = (repo / 'docs/logs' / log).read_text(encoding='utf-8-sig')
-        captured = '\n'.join(line.rstrip(' \t') for line in captured.splitlines()).strip()
-        match = re.search(r'```(?:text|powershell)\s*\n.*?\n```', section, re.S)
-        if not match: raise RuntimeError('Cannot find raw output block for: ' + image)
-        # Replace only the existing raw-output block; preserve the rest of the report.
-        section = section[:match.start()] + '```text\n' + captured + '\n```' + section[match.end():]
-        text = text[:start] + section + text[end:]
+    if '<!-- REPORT_COMPACT -->' not in text:
+        pairs = {
+            'api-e2e-terminal.png': 'verify_e2e.log', 'loki-logql-verification.png': 'check_loki.log',
+            'unit-api-tests.png': 'unit_tests.log', 'hardening-verification.png': 'hardening.log',
+            'networks-db-roles.png': 'networks_roles.log', 'persistence-restart.png': 'test_persistence.log'
+        }
+        for image, log in pairs.items():
+            marker = '(screenshots/' + image + ')'
+            start = text.find(marker)
+            if start < 0: raise RuntimeError('Missing report image reference: ' + image)
+            end = text.find('\n##', start)
+            if end < 0: end = len(text)
+            section = text[start:end]
+            captured = (repo / 'docs/logs' / log).read_text(encoding='utf-8-sig')
+            captured = '\n'.join(line.rstrip(' \t') for line in captured.splitlines()).strip()
+            match = re.search(r'```(?:text|powershell)\s*\n.*?\n```', section, re.S)
+            if not match: raise RuntimeError('Cannot find raw output block for: ' + image)
+            # Replace only the existing raw-output block; preserve the rest of the report.
+            section = section[:match.start()] + '```text\n' + captured + '\n```' + section[match.end():]
+            text = text[:start] + section + text[end:]
     text = text.replace('\u1ea2nh tr\u00edch xu\u1ea5t k\u1ebft qu\u1ea3', '\u1ea2nh ch\u1ee5p c\u1eeda s\u1ed5 PowerShell ghi nh\u1eadn k\u1ebft qu\u1ea3')
     source.write_text(text, encoding='utf-8')
 elif mode == 'toc':
@@ -273,7 +273,7 @@ try {
         if (-not $Resume) { throw ('Working tree is not clean. Use -Resume only for files from the previous failed capture. Existing work was preserved: ' + $dirty) }
         $alreadyStaged = Get-NativeText 'git' @('diff', '--cached', '--name-only')
         if ($alreadyStaged.Trim()) { throw 'There are already staged files. Resolve them before using -Resume; nothing was reset or unstaged.' }
-        $allowedResume = @('docs/bao-cao-de24.md', 'docs/bao-cao-de24.docx', 'docs/architecture.png', 'scripts/capture-evidence.ps1')
+        $allowedResume = @('docs/bao-cao-de24.md', 'docs/bao-cao-de24.docx', 'docs/build_report.py', 'docs/architecture.png', 'scripts/capture-evidence.ps1')
         $allowedResume += @('compose-startup', 'services-status', 'api-e2e-terminal', 'security-headers', 'loki-logql-verification', 'unit-api-tests', 'hardening-verification', 'networks-db-roles', 'persistence-restart') | ForEach-Object { 'docs/screenshots/' + $_ + '.png' }
         $allowedResume += @('compose_startup', 'services_status', 'verify_e2e', 'security_headers', 'check_loki', 'unit_tests', 'hardening', 'networks_roles', 'test_persistence') | ForEach-Object { 'docs/logs/' + $_ + '.log' }
         foreach ($line in ($dirty -split "`n")) {
@@ -333,8 +333,16 @@ try {
     Capture-Step 'loki-logql-verification' 'check_loki.log' 'node scripts/check_loki.js' {
         Invoke-Checked 'node' @('scripts/check_loki.js')
     }
-    Capture-Step 'unit-api-tests' 'unit_tests.log' 'npm --prefix app test -- --test-reporter=spec' {
-        Invoke-Checked 'npm.cmd' @('--prefix', 'app', 'test', '--', '--test-reporter=spec')
+    Capture-Step 'unit-api-tests' 'unit_tests.log' '$env:LOG_LEVEL=''silent''; npm --prefix app test -- --test-reporter=spec' {
+        # Expected mock database failures remain asserted; silence only application logging in this test process.
+        $previousLogLevel = $env:LOG_LEVEL
+        try {
+            $env:LOG_LEVEL = 'silent'
+            Invoke-Checked 'npm.cmd' @('--prefix', 'app', 'test', '--', '--test-reporter=spec')
+        } finally {
+            if ($null -eq $previousLogLevel) { Remove-Item Env:LOG_LEVEL -ErrorAction SilentlyContinue }
+            else { $env:LOG_LEVEL = $previousLogLevel }
+        }
     }
     Capture-Step 'hardening-verification' 'hardening.log' 'docker compose exec -T task-app id; docker compose exec -T nginx id; docker inspect (selected fields only)' {
         foreach ($service in @('task-app', 'nginx')) {
@@ -400,9 +408,10 @@ try {
         if (($script:LastOutput -join "`n") -match 'TOC_CHANGED=0') { $stable = $true; break }
     }
     if (-not $stable) { throw 'Manual TOC pagination did not stabilize; keep local results for inspection.' }
+    if ($pages -lt 10 -or $pages -gt 32) { throw "Report has $pages pages. Inspect layout before publishing; expected 10-32 pages." }
     Invoke-Checked 'python' @($helperPath, $RepoPath, 'check')
     Invoke-Checked 'git' @('diff', '--check')
-    $stage = @('docs/bao-cao-de24.md', 'docs/bao-cao-de24.docx', 'docs/architecture.png', 'scripts/capture-evidence.ps1')
+    $stage = @('docs/bao-cao-de24.md', 'docs/bao-cao-de24.docx', 'docs/build_report.py', 'docs/architecture.png', 'scripts/capture-evidence.ps1')
     $stage += @($shots | ForEach-Object { 'docs/screenshots/' + $_.Name })
     $stage += @(Get-ChildItem -LiteralPath $logTemp -Filter '*.log' | ForEach-Object { 'docs/logs/' + $_.Name })
     Invoke-Checked 'git' (@('add', '--') + $stage)
@@ -411,7 +420,7 @@ try {
     foreach ($file in $staged) { if ($file -and $file -notin $stage) { throw "Unexpected staged file: $file" } }
     & git diff --cached --quiet
     if ($LASTEXITCODE -eq 1) {
-        Invoke-Checked 'git' @('commit', '-m', 'docs: capture live Windows terminal evidence and refresh final report')
+        Invoke-Checked 'git' @('commit', '-m', 'docs: condense report and recapture Windows PowerShell evidence')
         $script:Committed = $true
     } elseif ($LASTEXITCODE -ne 0) { throw 'Could not inspect staged diff.' }
     if ($Push) { Invoke-Checked 'git' @('push', 'origin', 'main') }
