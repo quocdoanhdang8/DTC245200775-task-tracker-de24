@@ -379,7 +379,8 @@ def main():
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 p.paragraph_format.space_before = Pt(6)
                 p.paragraph_format.space_after = Pt(2)
-                p.add_run().add_picture(str(img_path), width=Inches(6.2))
+                p.paragraph_format.keep_with_next = True
+                p.add_run().add_picture(str(img_path), width=Inches(6.0))
             i += 1
             continue
         if line.startswith("*Hình ") and line.endswith("*"):
