@@ -151,10 +151,10 @@ def set_table_borders(table):
         element.set(qn("w:val"), "single")
         element.set(qn("w:sz"), "4")
         element.set(qn("w:space"), "0")
-        element.set(qn("w:color"), "D9E1DC")
+        element.set(qn("w:color"), "D9D9D9")
 
 
-def set_run_font(run, name="Arial", size=10.5, color="1B2922", bold=None):
+def set_run_font(run, name="Times New Roman", size=12, color="000000", bold=None):
     run.font.name = name
     run._element.get_or_add_rPr().rFonts.set(qn("w:ascii"), name)
     run._element.get_or_add_rPr().rFonts.set(qn("w:hAnsi"), name)
@@ -168,22 +168,23 @@ def set_run_font(run, name="Arial", size=10.5, color="1B2922", bold=None):
 def add_inline(paragraph, text, *, code=False):
     # Supports **bold** and `inline code`, keeping the original Vietnamese text.
     pattern = re.compile(r"(\*\*.*?\*\*|`[^`]+`)")
+    base_size = paragraph.style.font.size.pt if paragraph.style.font.size else 12
     pos = 0
     for match in pattern.finditer(text):
         if match.start() > pos:
             run = paragraph.add_run(text[pos:match.start()])
-            set_run_font(run)
+            set_run_font(run, size=base_size)
         token = match.group(0)
         if token.startswith("**"):
             run = paragraph.add_run(token[2:-2])
-            set_run_font(run, bold=True)
+            set_run_font(run, size=base_size, bold=True)
         else:
             run = paragraph.add_run(token[1:-1])
-            set_run_font(run, name="Consolas", size=9.5, color="385A47")
+            set_run_font(run, name="Consolas", size=10.5, color="000000")
         pos = match.end()
     if pos < len(text):
         run = paragraph.add_run(text[pos:])
-        set_run_font(run, name="Consolas" if code else "Arial", size=9.2 if code else 10.5)
+        set_run_font(run, name="Consolas" if code else "Times New Roman", size=9 if code else base_size)
 
 
 def add_page_field(paragraph):
@@ -224,13 +225,17 @@ def parse_table(lines, doc):
     columns = max(len(row) for row in rows)
     table = doc.add_table(rows=0, cols=columns)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.autofit = True
+    table.autofit = False
     table.style = "Table Grid"
+    widths = ([5.7, 0.8] if columns == 2 and rows[0][-1] == "Trang" else [2.0, 4.5] if columns == 2 else [1.25, 2.7, 2.55] if columns == 3 else [6.5 / columns] * columns)
+    for n, width in enumerate(widths):
+        table.columns[n].width = Inches(width)
     for row_index, values in enumerate(rows):
         cells = table.add_row().cells
         for col_index in range(columns):
             value = values[col_index] if col_index < len(values) else ""
             cell = cells[col_index]
+            cell.width = Inches(widths[col_index])
             cell.text = ""
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
             set_cell_margins(cell)
@@ -239,8 +244,8 @@ def parse_table(lines, doc):
             paragraph.paragraph_format.line_spacing = 1.08
             add_inline(paragraph, value)
             for run in paragraph.runs:
-                set_run_font(run, size=9.1, color="FFFFFF" if row_index == 0 else "26352D", bold=(row_index == 0))
-            set_cell_shading(cell, "174F3A" if row_index == 0 else ("F0F5F1" if row_index % 2 == 0 else "FFFFFF"))
+                set_run_font(run, size=10.5, color="FFFFFF" if row_index == 0 else "000000", bold=(row_index == 0))
+            set_cell_shading(cell, "374151" if row_index == 0 else ("F5F6F8" if row_index % 2 == 0 else "FFFFFF"))
     table.rows[0]._tr.get_or_add_trPr().append(OxmlElement("w:tblHeader"))
     set_table_borders(table)
     spacer = doc.add_paragraph()
@@ -249,20 +254,20 @@ def parse_table(lines, doc):
 
 def configure_styles(doc):
     normal = doc.styles["Normal"]
-    normal.font.name = "Arial"
-    normal._element.rPr.rFonts.set(qn("w:ascii"), "Arial")
-    normal._element.rPr.rFonts.set(qn("w:hAnsi"), "Arial")
-    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Arial")
-    normal.font.size = Pt(10.5)
-    normal.font.color.rgb = RGBColor(27, 41, 34)
-    normal.paragraph_format.line_spacing = 1.2
-    normal.paragraph_format.space_after = Pt(6)
-    for name, size in (("Title", 22), ("Heading 1", 15), ("Heading 2", 12.5), ("Heading 3", 11)):
+    normal.font.name = "Times New Roman"
+    normal._element.rPr.rFonts.set(qn("w:ascii"), "Times New Roman")
+    normal._element.rPr.rFonts.set(qn("w:hAnsi"), "Times New Roman")
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+    normal.font.size = Pt(12)
+    normal.font.color.rgb = RGBColor(0, 0, 0)
+    normal.paragraph_format.line_spacing = 1.12
+    normal.paragraph_format.space_after = Pt(5)
+    for name, size in (("Title", 22), ("Heading 1", 15), ("Heading 2", 13), ("Heading 3", 12)):
         style = doc.styles[name]
-        style.font.name = "Arial"
-        style._element.rPr.rFonts.set(qn("w:ascii"), "Arial")
-        style._element.rPr.rFonts.set(qn("w:hAnsi"), "Arial")
-        style._element.rPr.rFonts.set(qn("w:eastAsia"), "Arial")
+        style.font.name = "Times New Roman"
+        style._element.rPr.rFonts.set(qn("w:ascii"), "Times New Roman")
+        style._element.rPr.rFonts.set(qn("w:hAnsi"), "Times New Roman")
+        style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
         style.font.size = Pt(size)
         style.font.bold = True
         style.font.color.rgb = RGBColor(0, 0, 0)
@@ -277,22 +282,23 @@ def configure_styles(doc):
 
 
 def main():
-    make_architecture()
+    if not ARCHITECTURE.exists():
+        make_architecture()
     doc = Document()
     section = doc.sections[0]
     section.page_width = Inches(8.27)
     section.page_height = Inches(11.69)
     section.top_margin = Inches(0.72)
     section.bottom_margin = Inches(0.72)
-    section.left_margin = Inches(0.82)
-    section.right_margin = Inches(0.82)
+    section.left_margin = Inches(0.78)
+    section.right_margin = Inches(0.70)
     section.different_first_page_header_footer = True
     configure_styles(doc)
 
     header = section.header.paragraphs[0]
     header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     run = header.add_run("TRIỂN KHAI VÀ QUẢN TRỊ HỆ THỐNG PHẦN MỀM  ·  ĐỀ 24")
-    set_run_font(run, size=8.2, color="76827A")
+    set_run_font(run, size=8.2, color="000000")
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_page_field(footer)
@@ -314,11 +320,12 @@ def main():
                 p.paragraph_format.space_before = Pt(3)
                 p.paragraph_format.space_after = Pt(7)
                 p.paragraph_format.line_spacing = 1.02
+                p.paragraph_format.keep_together = True
                 for n, code_line in enumerate(code_lines):
                     if n:
                         p.add_run().add_break()
                     run = p.add_run(code_line or " ")
-                    set_run_font(run, name="Consolas", size=8.1, color="31453A")
+                    set_run_font(run, name="Consolas", size=9, color="000000")
                 in_code = False
             i += 1
             continue
@@ -329,6 +336,9 @@ def main():
         if line.strip() == "<!-- PAGEBREAK -->":
             doc.add_page_break()
             in_title_page = False
+            i += 1
+            continue
+        if line.strip().startswith("<!--"):
             i += 1
             continue
         if not line.strip():
@@ -355,6 +365,8 @@ def main():
                 add_inline(p, text)
             else:
                 p = doc.add_paragraph(style="Heading 1")
+                if (text.startswith("CHƯƠNG") and not text.startswith("CHƯƠNG 1 ")) or text.startswith("PHỤ LỤC A") or text.startswith("KẾT LUẬN"):
+                    p.paragraph_format.page_break_before = True
                 add_inline(p, text)
             i += 1
             continue
@@ -366,7 +378,7 @@ def main():
                 p.paragraph_format.space_after = Pt(14)
                 add_inline(p, text)
                 for run in p.runs:
-                    set_run_font(run, size=16, color="174F3A", bold=True)
+                    set_run_font(run, size=16, color="000000", bold=True)
             else:
                 p = doc.add_paragraph(style="Heading 2")
                 add_inline(p, text)
@@ -374,6 +386,9 @@ def main():
             continue
         if line.startswith("### "):
             p = doc.add_paragraph(style="Heading 3")
+            if in_title_page:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.space_after = Pt(20)
             add_inline(p, line[4:].strip())
             i += 1
             continue
@@ -387,7 +402,11 @@ def main():
                 p.paragraph_format.space_before = Pt(6)
                 p.paragraph_format.space_after = Pt(2)
                 p.paragraph_format.keep_with_next = True
-                p.add_run().add_picture(str(img_path), width=Inches(6.0))
+                image_width = 5.5 if img_path.name == "grafana-dashboard.png" else 5.8 if img_path.name == "prometheus-metric-query.png" else 6.25
+                picture = p.add_run().add_picture(str(img_path), width=Inches(image_width))
+                picture._inline.docPr.set("descr", img_match.group(1))
+            else:
+                raise FileNotFoundError(f"Missing evidence image: {img_path}")
             i += 1
             continue
         if line.startswith("*Hình ") and line.endswith("*"):
@@ -396,7 +415,7 @@ def main():
             caption.paragraph_format.space_before = Pt(1)
             caption.paragraph_format.space_after = Pt(6)
             for run in caption.runs:
-                set_run_font(run, size=9.2, color="52675A")
+                set_run_font(run, size=10, color="000000")
                 run.italic = True
             i += 1
             continue
@@ -410,7 +429,7 @@ def main():
                 caption = doc.add_paragraph("Hình 4.2. pgAdmin kết nối server và hiển thị dữ liệu bảng tasks")
                 caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 for run in caption.runs:
-                    set_run_font(run, size=9.2, color="52675A")
+                    set_run_font(run, size=10, color="000000")
                     run.italic = True
             else:
                 p = doc.add_paragraph()
