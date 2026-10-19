@@ -17,11 +17,13 @@ data/
 logs/
 *.pid
 *.log
+*.tmp
 
 # Editor / OS
 .DS_Store
 Thumbs.db
 .vscode/
+~$*
 
 # Generated report QA files
 docs/rendered/

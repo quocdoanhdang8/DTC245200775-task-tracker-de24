@@ -206,9 +206,16 @@ def add_page_field(paragraph):
 def parse_table(lines, doc):
     rows = []
     for line in lines:
-        if not line.startswith("|"):
+        raw = line.strip()
+        if not raw.startswith("|"):
             continue
-        cells = [part.strip() for part in line.strip().strip("|").split("|")]
+        # Strip outer pipes defining table boundaries
+        if raw.startswith("|"):
+            raw = raw[1:]
+        if raw.endswith("|") and not raw.endswith(r"\|"):
+            raw = raw[:-1]
+        raw_cells = re.split(r"(?<!\\)\|", raw)
+        cells = [part.strip().replace(r"\|", "|") for part in raw_cells]
         if cells and all(re.fullmatch(r"[-: ]+", cell or "-") for cell in cells):
             continue
         rows.append(cells)
@@ -463,7 +470,9 @@ def main():
 
     doc.core_properties.title = "Báo cáo thực hành Đề 24 — Task Tracker"
     doc.core_properties.subject = "Triển khai và Quản trị Hệ thống Phần mềm"
-    doc.core_properties.author = "[HỌ VÀ TÊN]"
+    doc.core_properties.author = "Đặng Quốc Doanh"
+    doc.core_properties.comments = "Đề tài 24: Hệ thống Quản lý Công việc Task Tracker - DTC245200775"
+    doc.core_properties.category = "Báo cáo thực hành"
     doc.save(OUTPUT)
     print(f"Wrote {OUTPUT}")
 

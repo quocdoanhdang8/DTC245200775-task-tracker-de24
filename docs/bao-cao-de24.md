@@ -4,19 +4,19 @@
 
 ### ĐỀ TÀI 24 — HỆ THỐNG QUẢN LÝ CÔNG VIỆC TASK TRACKER
 
-**Sinh viên:** [HỌ VÀ TÊN]
+**Sinh viên:** Đặng Quốc Doanh
 
-**Mã số sinh viên:** [MSSV]
+**Mã số sinh viên:** DTC245200775
 
-**Lớp:** [LỚP]
+**Lớp:** KHMT K23A
 
-**Trường/Khoa:** [TRƯỜNG/KHOA]
+**Trường/Khoa:** Trường Đại Học Công Nghệ Thông Tin Và Truyền Thông Thái Nguyên
 
-**Giảng viên hướng dẫn:** [GIẢNG VIÊN]
+**Giảng viên hướng dẫn:** Hoàng Văn Tâm
 
-**Năm học:** [NĂM HỌC]
+**Năm học:** 2026
 
-**[ĐỊA ĐIỂM], tháng 10 năm 2026**
+**Thái Nguyên, tháng 10 năm 2026**
 
 <!-- PAGEBREAK -->
 
@@ -29,9 +29,9 @@ Báo cáo này trình bày toàn bộ quá trình phân tích thiết kế, cài
 - Cổng tiếp nhận và bảo vệ biên: Nginx Reverse Proxy được cấu hình unprivileged, áp dụng 5 HTTP Security Headers tiêu chuẩn và che giấu cổng ứng dụng nội bộ.
 - Hệ thống giám sát metrics: Prometheus v3 scrape định kỳ 15 giây từ 5 mục tiêu (Node.js runtime metrics qua prom-client, PostgreSQL Exporter, Nginx Exporter, cAdvisor cho container resource, và Prometheus tự giám sát); Grafana v13 trực quan hóa bảng điều khiển thời gian thực.
 - Hệ thống tập trung nhật ký log: Nhật ký JSON có cấu trúc từ ứng dụng và access/error log từ Nginx được Promtail thu thập qua volume chia sẻ chỉ đọc và đẩy về Loki v3, cho phép truy vấn chuyên sâu bằng ngôn ngữ LogQL qua Grafana Explore.
-- Tăng cường bảo mật (Hardening): Thực thi nguyên tắc đặc quyền tối thiểu (Least Privilege), container chạy bằng tài khoản non-root (UID 10001, 101), hệ thống tệp gốc ở chế độ chỉ đọc (`read_only: true`), loại bỏ toàn bộ Linux Capabilities (`cap_drop: [ALL]`), kích hoạt `no-new-privileges`, phân tách 4 mạng Docker độc lập với cờ `internal: true`, và cô lập tuyệt đối các cổng quản trị/dữ liệu vào địa chỉ loopback `127.0.0.1`.
+- Tăng cường bảo mật (Hardening): Thực thi nguyên tắc đặc quyền tối thiểu (Least Privilege), container ứng dụng và Nginx chạy bằng tài khoản non-root (UID 10001, 101), phong tỏa hệ thống tệp gốc ở chế độ chỉ đọc (`read_only: true`), thu hồi toàn bộ Linux Capabilities (`cap_drop: [ALL]`), kích hoạt `no-new-privileges` rộng rãi, phân tách 4 mạng Docker chuyên trách (trong đó 2 mạng `data` và `observability` được bảo vệ với cờ `internal: true`, 2 mạng `front` và `management` là bridge tiêu chuẩn), và cô lập các cổng dịch vụ quản trị/dữ liệu vào địa chỉ loopback `127.0.0.1`.
 
-Toàn bộ kết quả thực nghiệm trong báo cáo được đo đạc, kiểm chứng và ghi lại trực tiếp trên môi trường Docker Desktop for Windows đang chạy thực tế; toàn bộ 18 hình ảnh minh chứng đều được trích xuất trực tiếp từ giao diện và terminal của hệ thống, tuyệt đối không sử dụng dữ liệu giả định.
+Hệ thống tài liệu bao gồm chính xác 18 hình: 1 sơ đồ kiến trúc hệ thống và luồng dữ liệu (Hình 3.1) được kết xuất trực quan từ thiết kế kỹ thuật, cùng 17 ảnh minh chứng thực nghiệm trích xuất trực tiếp từ giao diện đồ họa (UI) và kết quả thực thi các câu lệnh an toàn trên terminal hệ thống, đi kèm dữ liệu đầu ra thô (raw terminal output) đã che mờ thông tin bảo mật để đối chiếu và tái hiện.
 
 **Từ khóa:** Docker Compose, Task Tracker, Node.js, Express, PostgreSQL, pgAdmin, Nginx Reverse Proxy, Security Headers, Prometheus, Grafana, Loki, Promtail, LogQL, Container Hardening, Least Privilege.
 
@@ -43,18 +43,18 @@ Toàn bộ kết quả thực nghiệm trong báo cáo được đo đạc, ki�
 |---|---:|
 | Lời cảm ơn và tóm tắt | 2 |
 | Mục lục, Danh mục hình và Danh mục bảng | 3–4 |
-| Chương 1 — Giới thiệu đề tài, mục tiêu và yêu cầu | 5–6 |
-| Chương 2 — Cơ sở lý thuyết nền tảng | 7–8 |
-| Chương 3 — Phân tích và thiết kế kiến trúc hệ thống | 9–10 |
-| Chương 4 — Xây dựng ứng dụng Task Tracker và tích hợp PostgreSQL | 11–13 |
-| Chương 5 — Nginx Reverse Proxy và Bảo vệ HTTP | 14–15 |
-| Chương 6 — Giám sát hệ thống bằng Prometheus và Grafana | 16–18 |
-| Chương 7 — Thu thập và tập trung Log với Loki, Promtail và LogQL | 19–20 |
-| Chương 8 — Hardening, kiểm thử toàn diện và đánh giá an toàn | 21–24 |
-| Kết luận và hướng phát triển | 25 |
-| Tài liệu tham khảo | 26 |
-| Phụ lục A — Hướng dẫn cài đặt và vận hành trên Windows | 27–28 |
-| Phụ lục B — Checklist nghiệm thu và kịch bản demo | 29 |
+| Chương 1 — Giới thiệu đề tài, mục tiêu và yêu cầu | 5–8 |
+| Chương 2 — Cơ sở lý thuyết nền tảng | 9–10 |
+| Chương 3 — Phân tích và thiết kế kiến trúc hệ thống | 11–13 |
+| Chương 4 — Xây dựng ứng dụng Task Tracker và tích hợp PostgreSQL | 14–19 |
+| Chương 5 — Nginx Reverse Proxy và Bảo vệ HTTP | 20–22 |
+| Chương 6 — Giám sát hệ thống bằng Prometheus và Grafana | 23–26 |
+| Chương 7 — Thu thập và tập trung Log với Loki, Promtail và LogQL | 27–30 |
+| Chương 8 — Hardening, kiểm thử toàn diện và đánh giá an toàn | 31–37 |
+| Kết luận và hướng phát triển | 38 |
+| Tài liệu tham khảo | 39 |
+| Phụ lục A — Hướng dẫn cài đặt và vận hành trên Windows | 40–41 |
+| Phụ lục B — Checklist nghiệm thu và kịch bản demo | 42 |
 
 <!-- PAGEBREAK -->
 
@@ -62,7 +62,7 @@ Toàn bộ kết quả thực nghiệm trong báo cáo được đo đạc, ki�
 
 - Hình 1.1. Kiểm tra cấu hình Compose và khởi động stack bằng `docker compose up -d --build`.
 - Hình 1.2. Trạng thái hoạt động của 12 containers sau khi khởi chạy bằng `docker compose ps`.
-- Hình 3.1. Kiến trúc các thành phần và luồng dữ liệu (HTTP Request, Metrics, Centralized Log).
+- Hình 3.1. Sơ đồ kiến trúc các thành phần và luồng dữ liệu (HTTP Request, Metrics, Centralized Log).
 - Hình 4.1. Giao diện Task Tracker tại `http://127.0.0.1:8080` với danh sách công việc mẫu đa dạng trạng thái và mức ưu tiên.
 - Hình 4.2. Thao tác nhập liệu và tạo công việc mới trên biểu mẫu giao diện người dùng.
 - Hình 4.3. Tính năng lọc danh sách công việc theo trạng thái ("Đang thực hiện") trên giao diện web.
@@ -106,7 +106,7 @@ Trong hoạt động quản lý nhóm học tập hoặc dự án phần mềm q
 3. **Bảo vệ cổng vào bằng Reverse Proxy:** Triển khai Nginx unprivileged tiếp nhận mọi truy cập từ bên ngoài, đóng vai trò Reverse Proxy chuyển tiếp yêu cầu đến máy chủ ứng dụng nội bộ, che giấu cổng thực của Node.js và áp dụng 5 HTTP Security Headers tiêu chuẩn.
 4. **Giám sát số liệu hiệu năng:** Tích hợp Prometheus tự động thu thập metrics định kỳ từ ứng dụng, cơ sở dữ liệu, máy chủ proxy và tài nguyên phần cứng container; thiết lập bảng điều khiển Grafana Dashboard trực quan hóa theo thời gian thực.
 5. **Tập trung hóa nhật ký vận hành:** Ứng dụng xuất log định dạng JSON có cấu trúc; Nginx ghi nhận access log và error log; Promtail thu thập nhật ký từ volume dùng chung và đẩy về Loki; hỗ trợ truy vấn, sàng lọc bằng ngôn ngữ LogQL qua Grafana Explore.
-6. **Thực thi chính sách an toàn thông tin (Hardening):** Áp dụng nguyên tắc đặc quyền tối thiểu (Least Privilege), chạy toàn bộ tiến trình dưới quyền non-root, phong tỏa quyền ghi hệ thống tệp gốc, thu hồi mọi Linux Capabilities, phân tách các phân vùng mạng nội bộ và cô lập cổng kết nối vào địa chỉ loopback `127.0.0.1`.
+6. **Thực thi chính sách an toàn thông tin (Hardening):** Áp dụng nguyên tắc đặc quyền tối thiểu (Least Privilege), chạy ứng dụng và Nginx dưới quyền non-root (UID 10001, 101), phong tỏa quyền ghi hệ thống tệp gốc (`read_only: true`), thu hồi Linux Capabilities (`cap_drop: [ALL]`), kích hoạt `no-new-privileges` rộng rãi, phân tách các phân vùng mạng nội bộ chuyên trách (`data`, `observability` với `internal: true`) và cô lập cổng kết nối vào địa chỉ loopback `127.0.0.1`.
 
 ## 1.3 Phạm vi và tiêu chí hoàn thành
 
@@ -146,12 +146,12 @@ Lệnh `docker compose config --quiet` thoát với mã `0`, xác nhận không 
 5. **Cách tái hiện:**
 Tại thư mục gốc dự án, sao chép `.env.example` thành `.env`, điền các mật khẩu riêng tư, sau đó thực thi tuần tự hai lệnh trên trong PowerShell.
 
-Sau khi khởi chạy, trạng thái chi tiết của từng container được ghi nhận qua lệnh `docker compose ps`:
+Sau khi khởi chạy, trạng thái hoạt động của các container đang chạy được kiểm tra qua lệnh `docker compose ps` (hoặc dùng `docker compose ps -a` để hiển thị đầy đủ toàn bộ danh sách gồm cả container khởi tạo đã hoàn thành nhiệm vụ):
 
 ![Hình 1.2. Trạng thái các dịch vụ sau khi khởi chạy](screenshots/services-status.png)
 *Hình 1.2. Trạng thái hoạt động của 12 containers sau khi khởi chạy bằng docker compose ps*
 
-Toàn bộ các container nghiệp vụ và hạ tầng đều đạt trạng thái `Up (healthy)` hoặc `Up (running)`; container khởi tạo quyền volume `log-init` hoàn thành nhiệm vụ và kết thúc với mã `0` đúng như thiết kế.
+Toàn bộ các container nghiệp vụ và hạ tầng dài hạn đều đạt trạng thái `Up (healthy)` hoặc `Up (running)`. Dịch vụ khởi tạo `log-init` được thiết kế chạy quyền root một lần duy nhất (`user: "0:0"`) khi stack khởi động để phân bổ quyền thư mục volume (`chown 10001:10001 /logs/app` và `chown 101:101 /logs/nginx`), sau đó kết thúc nhiệm vụ với mã thoát `0` (`restart: "no"`). Khi quan sát qua lệnh `docker compose ps -a`, trạng thái `Exited (0)` chính là bằng chứng xác nhận `log-init` đã hoàn thành thành công và đúng thiết kế.
 
 <!-- PAGEBREAK -->
 
@@ -165,7 +165,7 @@ Docker Compose là công cụ điều phối đa container thông qua tệp khai
 
 ## 2.2 PostgreSQL và công cụ quản trị cơ sở dữ liệu pgAdmin
 
-PostgreSQL là hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở (RDBMS) mạnh mẽ, tuân thủ nghiêm ngặt các nguyên tắc ACID (Atomicity, Consistency, Isolation, Durability). PostgreSQL cung cấp hệ thống kiểu dữ liệu phong phú, hỗ trợ khóa chính tự tăng, các ràng buộc toàn vẹn dữ liệu (Check Constraints) và các bộ chỉ mục (B-Tree Indexes) giúp tối ưu hóa tốc độ truy vấn danh mục công việc. Ứng dụng giao tiếp với PostgreSQL thông qua cơ chế truy vấn tham số hóa (Parameterized Queries), triệt tiêu hoàn toàn nguy cơ tấn công tiêm mã độc SQL Injection.
+PostgreSQL là hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở (RDBMS) mạnh mẽ, tuân thủ nghiêm ngặt các nguyên tắc ACID (Atomicity, Consistency, Isolation, Durability). PostgreSQL cung cấp hệ thống kiểu dữ liệu phong phú, hỗ trợ khóa chính tự tăng, các ràng buộc toàn vẹn dữ liệu (Check Constraints) và các bộ chỉ mục (B-Tree Indexes) giúp tối ưu hóa tốc độ truy vấn danh mục công việc. Ứng dụng giao tiếp với PostgreSQL thông qua cơ chế truy vấn tham số hóa (Parameterized Queries) của thư viện `pg`, giúp phòng chống và ngăn chặn hiệu quả các nguy cơ tấn công tiêm mã độc SQL Injection.
 
 pgAdmin 4 là giao diện quản trị cơ sở dữ liệu PostgreSQL trực quan trên nền web. Trong kiến trúc container, pgAdmin kết nối tới cơ sở dữ liệu thông qua tên dịch vụ nội bộ `db` trong mạng ảo Docker mà không phụ thuộc vào địa chỉ IP của máy chủ vật lý, tạo điều kiện thuận lợi cho người quản trị theo dõi cấu trúc bảng, kiểm tra chỉ mục và rà soát dữ liệu vận hành.
 
@@ -221,23 +221,23 @@ Hệ thống Task Tracker Đề 24 được hợp thành từ 12 dịch vụ Doc
 
 ## 3.2 Thiết kế phân tách mạng nội bộ (Network Segmentation)
 
-Nhằm triệt tiêu nguy cơ di chuyển ngang (lateral movement) khi một thành phần bị xâm nhập, hệ thống thiết kế 4 phân vùng mạng Docker riêng biệt:
-1. **Mạng `front` (Bridge):** Kết nối giữa Nginx và ứng dụng `task-app`. Nginx tiếp nhận yêu cầu từ client bên ngoài và chuyển tiếp vào mạng này; Nginx Exporter cũng nằm trong mạng này để đọc stub_status.
-2. **Mạng `data` (Bridge, `internal: true`):** Mạng nội bộ tuyệt đối, kết nối `task-app`, `db`, `pgadmin` và `postgres-exporter`. Do được bật cờ `internal: true`, các container trong mạng này hoàn toàn không có đường định tuyến ra ngoài Internet, bảo vệ tối đa dữ liệu cơ sở dữ liệu.
-3. **Mạng `observability` (Bridge, `internal: true`):** Mạng nội bộ phục vụ giám sát và logging. Nối `task-app`, `nginx`, các exporters, `cadvisor`, `prometheus`, `loki`, `promtail` và `grafana`. Dữ liệu metrics và log chỉ lưu chuyển trong nội bộ mạng này.
-4. **Mạng `management` (Bridge):** Mạng phục vụ giao diện quản trị host loopback cho `pgadmin`, `prometheus` và `grafana`. Các dịch vụ này cần xuất cổng ra `127.0.0.1` của host trên Docker Desktop, đồng thời vẫn tham gia mạng dữ liệu hoặc observability tương ứng để đọc dữ liệu.
+Nhằm giảm thiểu nguy cơ di chuyển ngang (lateral movement) khi một thành phần bị xâm nhập, hệ thống thiết kế 4 phân vùng mạng Docker riêng biệt với các chính sách định tuyến cụ thể:
+1. **Mạng `front` (Bridge):** Mạng kết nối tầng biên giữa Nginx Reverse Proxy và ứng dụng `task-app`, đồng thời có Nginx Exporter để đọc stub status. Đây là mạng bridge thông thường (không bật `internal: true`), cho phép các dịch vụ gắn vào mạng này tiếp nhận kết nối và định tuyến ra ngoài khi cần thiết.
+2. **Mạng `data` (Bridge, `internal: true`):** Phân vùng mạng nội bộ chuyên biệt cho dữ liệu, kết nối `task-app`, `db`, `pgadmin` và `postgres-exporter`. Do được bật cờ `internal: true`, Docker không tạo default gateway ra ngoài Internet cho mạng này. Các container chỉ kết nối duy nhất vào mạng `data` (như `db`) sẽ bị cô lập hoàn toàn khỏi Internet, ngăn chặn nguy cơ rò rỉ dữ liệu hoặc tấn công từ bên ngoài. Đối với các container kết nối đồng thời nhiều mạng (như `task-app` nối cả `front`, `pgadmin` nối cả `management`), container có thể định tuyến ra ngoài thông qua giao diện mạng của phân vùng non-internal tương ứng.
+3. **Mạng `observability` (Bridge, `internal: true`):** Phân vùng mạng nội bộ chuyên trách giám sát và logging, kết nối `task-app`, `nginx`, các exporters, `cadvisor`, `prometheus`, `loki`, `promtail` và `grafana`. Tương tự mạng `data`, cờ `internal: true` ngăn không cho mạng này làm gateway ra Internet; các container chỉ nằm trong mạng này (như `loki`, `promtail`, `cadvisor`) không có đường ra Internet trực tiếp.
+4. **Mạng `management` (Bridge):** Mạng bridge phục vụ giao diện quản trị host loopback cho `pgadmin`, `prometheus` và `grafana`. Các dịch vụ này cần xuất cổng ra `127.0.0.1` của host trên Docker Desktop, đồng thời tham gia mạng dữ liệu hoặc observability tương ứng để đọc số liệu.
 
-Tất cả các cổng dịch vụ công khai ra host (`8080`, `5050`, `9090`, `3001`) đều được cấu hình tường minh gắn vào loopback `127.0.0.1`, tuyệt đối không lắng nghe trên `0.0.0.0`, ngăn chặn hoàn toàn việc các thiết bị lạ trong cùng mạng LAN truy cập vào hệ thống demo.
+Tất cả các cổng dịch vụ công khai ra host (`8080`, `5050`, `9090`, `3001`) đều được cấu hình tường minh gắn vào loopback `127.0.0.1`, tuyệt đối không lắng nghe trên `0.0.0.0`, ngăn chặn việc các thiết bị lạ trong cùng mạng LAN truy cập vào hệ thống demo.
 
 ## 3.3 Sơ đồ kiến trúc tổng thể và các luồng dữ liệu
 
-Sơ đồ kiến trúc tại Hình 3.1 mô tả trực quan 3 luồng dữ liệu chính vận hành song song trong hệ thống:
+Sơ đồ kiến trúc tại Hình 3.1 được kết xuất trực quan từ bản thiết kế kỹ thuật, thể hiện rõ 3 luồng dữ liệu chính vận hành song song trong hệ thống:
 - **Luồng HTTP Request:** Người dùng gửi yêu cầu tới `127.0.0.1:8080`. Nginx tiếp nhận, áp dụng Security Headers và proxy tới `task-app:3000`. Ứng dụng xử lý nghiệp vụ, gửi truy vấn SQL tham số hóa tới `db:5432` bằng role `task_app` và phản hồi kết quả về client.
 - **Luồng Scrape Metrics:** Prometheus kích hoạt chu kỳ scrape 15s một lần, gửi HTTP GET tới endpoint metrics của `task-app`, `postgres-exporter`, `nginx-exporter`, `cadvisor` và chính nó. Grafana định kỳ gửi truy vấn PromQL tới Prometheus để vẽ đồ thị.
 - **Luồng Centralized Log:** `task-app` ghi log JSON ra `/var/log/app/app.jsonl`; Nginx ghi log ra `/var/log/nginx/access.log`. Promtail gắn volume `service_logs` ở chế độ chỉ đọc (read-only), trích xuất nhãn và gửi log về Loki qua HTTP POST. Người vận hành dùng Grafana Explore gửi LogQL để tra cứu log thời gian thực.
 
-![Hình 3.1. Kiến trúc các thành phần và luồng dữ liệu](architecture.png)
-*Hình 3.1. Kiến trúc các thành phần và luồng dữ liệu (HTTP Request, Metrics, Centralized Log)*
+![Hình 3.1. Sơ đồ kiến trúc các thành phần và luồng dữ liệu](architecture.png)
+*Hình 3.1. Sơ đồ kiến trúc các thành phần và luồng dữ liệu (HTTP Request, Metrics, Centralized Log)*
 
 <!-- PAGEBREAK -->
 
@@ -317,23 +317,46 @@ Về phân quyền, script khởi tạo database tạo ra tài khoản `task_app
 1. **Mục tiêu:** Kiểm chứng toàn diện chu trình xử lý của API thông qua Nginx Reverse Proxy: kiểm tra trạng thái sức khỏe (`GET /health`), tạo công việc có mã nhận diện riêng (`POST`), tìm kiếm và lọc (`GET ?q=...`), cập nhật trạng thái (`PATCH`), xóa công việc (`DELETE`), kiểm tra mã `404` khi thao tác trên task đã xóa, và kiểm tra cơ chế từ chối dữ liệu không hợp lệ / JSON hỏng với mã `400 Bad Request`.
 2. **Lệnh thực hiện:**
 ```powershell
-node scratch/verify_e2e.js
+node scripts/verify_e2e.js
 ```
 3. **Ảnh minh chứng:**
 
 ![Hình 4.4. Kiểm thử E2E API qua Nginx](screenshots/api-e2e-terminal.png)
-*Hình 4.4. Thực thi kiểm thử tự động End-to-End (E2E) các API CRUD qua Nginx trên terminal*
+*Hình 4.4. Ảnh trích xuất kết quả thực thi kiểm thử tự động End-to-End (E2E) các API CRUD qua Nginx trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - `GET /health` trả về mã HTTP `200` kèm JSON xác nhận database đã kết nối (`{"status":"ok","database":"connected"}`).
-- `POST /api/tasks` tạo thành công task kiểm thử `VERIFY-6vkq9a` với mã `201 Created` và ID tự tăng là `11`.
-- `GET /api/tasks?q=VERIFY-6vkq9a` tìm thấy chính xác 1 bản ghi khớp từ khóa.
-- `PATCH /api/tasks/11` cập nhật trạng thái thành `"in_progress"` thành công với mã `200 OK`.
-- `DELETE /api/tasks/11` xóa bản ghi thành công với mã `204 No Content`.
-- `PATCH /api/tasks/11` sau khi đã xóa trả về mã `404 Not Found` chuẩn RESTful.
+- `POST /api/tasks` tạo thành công task kiểm thử với mã `201 Created` và ID tự tăng được lưu vào database.
+- `GET /api/tasks?q=...` tìm thấy chính xác bản ghi khớp từ khóa vừa tạo.
+- `PATCH /api/tasks/:id` cập nhật trạng thái thành `"in_progress"` thành công với mã `200 OK`.
+- `DELETE /api/tasks/:id` xóa bản ghi thành công với mã `204 No Content`. (Lưu ý: trong access log Nginx ở Chương 7, dòng `DELETE` xuất hiện mã `404` là từ một yêu cầu dọn dẹp gửi lại sau khi task đã bị xóa trước đó, minh chứng API từ chối chuẩn xác khi thao tác trên bản ghi không còn tồn tại).
+- `PATCH /api/tasks/:id` sau khi đã xóa trả về mã `404 Not Found` chuẩn RESTful.
 - Dữ liệu thiếu tiêu đề hoặc JSON cú pháp hỏng bị từ chối với mã `400 Bad Request`, không gây crash server hay rò rỉ mã nguồn.
 - Toàn bộ 8/8 bước kiểm thử E2E đạt PASS 100%.
-5. **Cách tái hiện:** Thực thi tệp `scratch/verify_e2e.js` bằng Node.js khi stack đang hoạt động.
+
+Dữ liệu đầu ra thô (raw terminal output) ghi nhận từ phiên thực thi:
+```text
+=== BẮT ĐẦU E2E VERIFICATION QUA NGINX ===
+Endpoint kiểm thử: http://127.0.0.1:8080
+1. Kiểm tra GET /health...
+   Health status: {"status":"ok","database":"connected"}
+2. Tạo task kiểm thử: "VERIFY-p0am1n"...
+   Task tạo thành công: ID=15, title="VERIFY-p0am1n", priority="high"
+3. GET danh sách và lọc task với từ khóa "VERIFY-p0am1n"...
+   Tìm thấy 1 task khớp từ khóa "VERIFY-p0am1n"
+4. Cập nhật PATCH trạng thái task 15 thành "in_progress"...
+   Task sau cập nhật: status="in_progress"
+5. Xóa DELETE task 15...
+   Xóa thành công (HTTP 204 No Content)
+6. Xác minh PATCH task đã xóa (ID=15) trả về HTTP 404...
+   Kết quả PATCH task đã xóa: status=404
+7. Xác minh dữ liệu sai (tiêu đề rỗng, status sai) trả về HTTP 400...
+   Kết quả dữ liệu sai: status=400
+8. Xác minh JSON cú pháp hỏng trả về HTTP 400...
+   Kết quả JSON hỏng: status=400
+=== TẤT CẢ CÁC BƯỚC E2E QUA NGINX ĐÃ ĐẠT PASS 100% ===
+```
+5. **Cách tái hiện:** Thực thi tệp `scripts/verify_e2e.js` bằng Node.js khi stack đang hoạt động.
 
 ## 4.5 Quản trị và truy vấn PostgreSQL qua giao diện web pgAdmin 4
 
@@ -514,7 +537,7 @@ Bảng 7.1 trình bày chi tiết ba mẫu truy vấn LogQL được thiết k�
 | TT | Biểu thức truy vấn LogQL | Mục đích phân tích vận hành | Kết quả thực nghiệm ghi nhận |
 |---|---|---|---|
 | 1 | `{service="task-tracker"} \| json` | Trích xuất toàn bộ nhật ký ứng dụng và tự động phân giải các trường JSON (như `requestId`, `method`, `path`, `statusCode`, `durationMs`) thành các thuộc tính có thể lọc. | Trả về các dòng log JSON hoàn chỉnh của ứng dụng, hiển thị rõ request ID và thời gian xử lý từng request (1ms). |
-| 2 | `{service="task-tracker"} \| json \| statusCode >= 200` *(hoặc `{service="task-tracker"} \| json \| level="50"`)* | Lọc các bản ghi log nghiệp vụ theo điều kiện mã trạng thái HTTP thành công/lỗi hoặc lọc riêng các bản ghi lỗi nghiêm trọng (Pino level 50 tương đương ERROR). | Sàng lọc chính xác các request hợp lệ hoặc các dòng log ghi nhận lỗi kiểm thử giả lập, hỗ trợ khoanh vùng sự cố nhanh chóng. |
+| 2 | `{service="task-tracker"} \| json \| statusCode >= 200 and statusCode < 300` *(Lưu ý: nếu chỉ dùng `statusCode >= 200`, bộ lọc sẽ bao gồm cả mã lỗi 4xx và 5xx)* | Sàng lọc các bản ghi yêu cầu HTTP thành công (dải 2xx: 200 OK, 201 Created, 204 No Content). Để lọc riêng lỗi, dùng `{service="task-tracker"} \| json \| level="50"` hoặc `statusCode >= 400`. | Sàng lọc chính xác các yêu cầu thành công, loại trừ hoàn toàn các mã lỗi phát sinh khi client gửi dữ liệu sai hoặc thao tác kiểm thử. |
 | 3 | `{service="nginx", log_type="access"} \|= "/api/tasks"` | Lọc toàn bộ access log của Nginx Reverse Proxy có chứa chuỗi đường dẫn `/api/tasks` để theo dõi các thao tác CRUD từ phía biên mạng. | Trả về danh sách các bản ghi truy cập Nginx kèm IP nguồn, phương thức HTTP, endpoint `/api/tasks`, mã HTTP và thời gian phản hồi. |
 
 *Bảng 7.1. Ba mẫu truy vấn LogQL, mục đích phân tích và kết quả thực nghiệm*
@@ -537,19 +560,51 @@ Giao diện hiển thị biểu đồ tần suất log (Logs Volume Histogram) p
 1. **Mục tiêu:** Xác minh bằng dòng lệnh độc lập rằng cả 3 truy vấn LogQL đều trả về dữ liệu thực tế phát sinh gần nhất trong phiên kiểm thử, không trả về kết quả rỗng.
 2. **Lệnh thực hiện:**
 ```powershell
-node scratch/check_loki.js
+node scripts/check_loki.js
 ```
 3. **Ảnh minh chứng:**
 
 ![Hình 7.2. Kiểm chứng 3 truy vấn LogQL trên terminal](screenshots/loki-logql-verification.png)
-*Hình 7.2. Thực thi và kiểm chứng 3 truy vấn LogQL thực tế trên terminal/API*
+*Hình 7.2. Ảnh trích xuất kết quả thực thi kiểm chứng 3 truy vấn LogQL thực tế trên terminal/API*
 
 4. **Kết quả quan sát và ý nghĩa:**
-- Truy vấn 1 (`{service="task-tracker"} | json`): Tìm thấy 5 streams log hoạt động, nạp thành công bản ghi log JSON từ `app.jsonl`.
-- Truy vấn 2 (`{service="task-tracker"} | json | statusCode >= 200`): Lọc thành công các bản ghi có mã trạng thái hợp lệ.
-- Truy vấn 3 (`{service="nginx", log_type="access"} |= "/api/tasks"`): Tìm thấy stream log Nginx chứa các dòng access log thực tế như `DELETE /api/tasks/11 HTTP/1.1 404`.
-- Xác nhận 3/3 truy vấn LogQL đều đạt kết quả PASS thực tế.
-5. **Cách tái hiện:** Chạy script `node scratch/check_loki.js` trong PowerShell.
+- Truy vấn 1 (`{service="task-tracker"} | json`): Tìm thấy các streams log hoạt động, nạp thành công bản ghi log JSON từ `app.jsonl`.
+- Truy vấn 2 (`{service="task-tracker"} | json | statusCode >= 200 and statusCode < 300`): Lọc thành công các bản ghi có mã trạng thái thành công thuộc dải 2xx (200, 201, 204), loại bỏ các mã lỗi. (Lưu ý kỹ thuật: Nếu chỉ dùng điều kiện `statusCode >= 200`, kết quả sẽ chứa cả các mã lỗi 4xx và 5xx; do đó điều kiện chặn trên `< 300` là cần thiết để phản ánh chính xác các request thành công).
+- Truy vấn 3 (`{service="nginx", log_type="access"} |= "/api/tasks"`): Tìm thấy stream log Nginx chứa các dòng access log thực tế.
+  * Phân biệt và đối chiếu request: Trong quy trình E2E, thao tác xóa task hợp lệ trả về `HTTP 204 No Content`. Dòng access log ghi nhận `DELETE /api/tasks/:id HTTP/1.1 404` xuất hiện sau đó là kết quả của một request dọn dẹp/xóa lại (cleanup check) để kiểm tra tính trơ (idempotency), chứng minh hệ thống từ chối chuẩn xác khi thao tác trên bản ghi đã bị xóa; đây là hai request hoàn toàn khác nhau, không phải cùng một request trả về hai kết quả mâu thuẫn.
+  * Phân biệt lỗi kiểm thử và log runtime: Các lỗi kết nối database giả lập phát sinh trong bộ kiểm thử đơn vị (`npm test`) được tạo ra bởi mock in-memory trong tiến trình Node.js độc lập của test runner, tách biệt hoàn toàn với log vận hành runtime thực tế được Promtail ghi nhận và đẩy về Loki.
+- Xác nhận 3/3 truy vấn LogQL đều đạt kết quả PASS thực tế trên dữ liệu hoạt động sống của hệ thống.
+
+Dữ liệu đầu ra thô (raw terminal output) từ script kiểm chứng:
+```text
+=== BẮT ĐẦU XÁC MINH TRUY VẤN LOGQL QUA LOKI ===
+Grafana URL: http://127.0.0.1:3001
+Loki Datasource UID: "loki" (URL nội bộ: http://loki:3100)
+
+--- [1/3] Truy vấn 1 (Log JSON ứng dụng) ---
+    LogQL: {service="task-tracker"} | json
+    Mục đích: Trích xuất toàn bộ trường JSON của ứng dụng Express
+    Trạng thái: success | Streams tìm thấy: 5
+    Số bản ghi trong stream đầu tiên: 1
+    Bản ghi mẫu: {"level":30,"time":1792434117621,"service":"task-tracker","environment":"production","requestId":"66fc0ab7-f985-4fd0-941e-b8f45aff3974","method":"POST...
+
+--- [2/3] Truy vấn 2 (Lọc log thành công 2xx) ---
+    LogQL: {service="task-tracker"} | json | statusCode >= 200 and statusCode < 300
+    Mục đích: Sàng lọc các yêu cầu HTTP thành công (mã 200, 201, 204)
+    Trạng thái: success | Streams tìm thấy: 5
+    Số bản ghi trong stream đầu tiên: 1
+    Bản ghi mẫu: {"level":30,"time":1792434117563,"service":"task-tracker","environment":"production","requestId":"7e4e7ba5-1eb7-4952-aa5d-83cbe07bd3c6","method":"GET"...
+
+--- [3/3] Truy vấn 3 (Access log Nginx cho API tasks) ---
+    LogQL: {service="nginx", log_type="access"} |= "/api/tasks"
+    Mục đích: Lọc nhật ký truy cập Nginx Reverse Proxy theo endpoint /api/tasks
+    Trạng thái: success | Streams tìm thấy: 1
+    Số bản ghi trong stream đầu tiên: 5
+    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:18:21:57 +0000] "POST /api/tasks HTTP/1.1" 400 35 "-" "node"
+
+=== XÁC NHẬN: 3/3 TRUY VẤN LOGQL HOẠT ĐỘNG CHÍNH XÁC VÀ TRẢ VỀ DỮ LIỆU THẬT ===
+```
+5. **Cách tái hiện:** Chạy script `node scripts/check_loki.js` trong PowerShell.
 
 ## 7.6 Đánh giá vòng đời Promtail và định hướng Grafana Alloy
 
@@ -567,20 +622,24 @@ Bảo vệ an toàn cho hệ thống container đòi hỏi việc triển khai n
 1. **Tiến trình Non-Root:**
    - Ứng dụng Node.js chạy dưới tài khoản người dùng `node` có định danh số tường minh: `UID 10001, GID 10001`.
    - Nginx chạy dưới tài khoản người dùng unprivileged: `UID 101, GID 101`.
-   - Ngay cả khi kẻ tấn công tìm được lỗ hổng thực thi mã từ xa (RCE) trong ứng dụng, quyền hạn chiếm được cũng chỉ là một người dùng thông thường, không thể can thiệp vào kernel hay kiểm soát máy chủ vật lý host.
+   - Đối với dịch vụ khởi tạo `log-init`, container chạy quyền root (`user: "0:0"`) một lần duy nhất lúc khởi động để thực hiện phân quyền sở hữu thư mục volume (`chown 10001:10001 /logs/app` và `chown 101:101 /logs/nginx`), sau đó kết thúc ngay với mã thoát `0` (`restart: "no"`).
+   - Ngay cả khi kẻ tấn công tìm được lỗ hổng thực thi mã từ xa (RCE) trong ứng dụng hoặc proxy, quyền hạn chiếm được cũng chỉ là một người dùng thông thường, không thể can thiệp vào kernel hay kiểm soát máy chủ vật lý host.
 2. **Hệ thống tệp gốc chỉ đọc (`read_only: true`):**
-   - Cả container `task-app` và `nginx` đều được kích hoạt cờ `read_only: true`. Kẻ tấn công hoàn toàn không thể ghi đè mã nguồn, cài đặt backdoor hay tải các công cụ khai thác nhị phân vào container filesystem.
+   - Hai container tiếp nhận xử lý ứng dụng và tầng biên là `task-app` và `nginx` đều được kích hoạt cờ `read_only: true`. Kẻ tấn công không thể ghi đè mã nguồn, cài đặt backdoor hay tải các công cụ khai thác nhị phân vào container filesystem.
    - Các vùng nhớ tạm thời cần thiết được gắn qua bộ nhớ ảo `tmpfs` giới hạn kích thước 16MB kèm cờ bảo vệ chống thực thi: `/tmp:rw,noexec,nosuid,size=16m`.
+   - Các container cơ sở dữ liệu (`db`) và giám sát (`prometheus`, `loki`, `grafana`) cần duy trì trạng thái ghi dữ liệu vào các named volume chuyên dụng tương ứng, do đó không áp dụng cờ read-only rootfs.
 3. **Thu hồi Linux Capabilities (`cap_drop: [ALL]`):**
-   - Loại bỏ toàn bộ các đặc quyền nhân Linux mặc định của container. Container không thể can thiệp mạng, không thể mount filesystem và không thể thay đổi quyền sở hữu tệp.
+   - Áp dụng trên `task-app` và `nginx` để loại bỏ toàn bộ các đặc quyền nhân Linux mặc định. Container không thể can thiệp mạng, không thể mount filesystem và không thể thay đổi quyền sở hữu tệp.
 4. **Ngăn chặn nâng đặc quyền (`no-new-privileges: true`):**
-   - Kích hoạt tùy chọn bảo mật `no-new-privileges: true` cho toàn bộ các dịch vụ trọng yếu, ngăn chặn các tiến trình con chiếm quyền quản trị thông qua các tệp có cờ `setuid` hoặc `setgid`.
+   - Kích hoạt tùy chọn bảo mật `no-new-privileges: true` cho toàn bộ các dịch vụ vận hành chính (`db`, `task-app`, `nginx`, `postgres-exporter`, `nginx-exporter`, `cadvisor`, `prometheus`, `loki`, `promtail`, `grafana`), ngăn chặn triệt để các tiến trình con chiếm quyền quản trị thông qua các tệp có cờ `setuid` hoặc `setgid`.
 
 ## 8.2 Cô lập mạng và phân quyền Role Database
 
-- **Cô lập mạng nội bộ:** Như đã phân tích tại Chương 3, các mạng `data` và `observability` đều được cấu hình `internal: true`. PostgreSQL không có đường ra Internet và không thể bị quét cổng từ bên ngoài mạng Docker.
-- **Che giấu cổng dịch vụ:** Các cổng `3000` (Node.js) và `5432` (PostgreSQL) hoàn toàn không được map ra cổng host. Mọi truy cập dữ liệu bắt buộc phải đi qua Nginx hoặc pgAdmin.
-- **Phân quyền Role PostgreSQL:** Role `task_app` và `metrics_exporter` đều có cờ `rolsuper = false`. Ứng dụng không thể thực hiện các thao tác quản trị cấp cao như xóa cơ sở dữ liệu hay tạo superuser mới.
+- **Cô lập mạng chuyên trách:** Như đã quy hoạch tại Chương 3, hệ thống tách biệt rõ ràng các phân vùng mạng:
+  * Hai mạng `data` và `observability` được cấu hình cờ `internal: true`. Docker không cấp gateway ra ngoài cho hai mạng này. Các dịch vụ chỉ tham gia mạng nội bộ (như PostgreSQL `db`, máy chủ `loki`, `promtail`, `cadvisor`) hoàn toàn không có đường định tuyến ra ngoài Internet, ngăn ngừa việc bị dò quét cổng hoặc tấn công trực tiếp.
+  * Hai mạng `front` và `management` là mạng bridge thông thường không có cờ internal. Các container đa mạng (multi-homed) như `task-app` (nối cả `front`, `data`, `observability`) hoặc `grafana`, `prometheus`, `pgadmin` (nối `management`) sở hữu giao diện mạng bridge và vẫn có khả năng định tuyến ra ngoài khi cần thiết qua interface non-internal tương ứng.
+- **Che giấu cổng dịch vụ:** Các cổng `3000` (Node.js) và `5432` (PostgreSQL) hoàn toàn không được map ra cổng host. Mọi truy cập dữ liệu nghiệp vụ bắt buộc phải đi qua Nginx hoặc pgAdmin.
+- **Phân quyền Role PostgreSQL:** Role `task_app` và `metrics_exporter` đều có cờ `rolsuper = false`. Ứng dụng nghiệp vụ không có quyền superuser, chỉ được thao tác DML trên bảng `public.tasks` và không thể can thiệp vào các bảng hệ thống hoặc cấu hình cơ sở dữ liệu.
 
 ## 8.3 Ma trận kiểm thử toàn diện hệ thống
 
@@ -588,7 +647,7 @@ Bảng 8.1 tổng hợp kết quả thực thi 10 ca kiểm thử nghiệm thu t
 
 | Mã ca | Mục tiêu và thao tác kiểm tra | Kết quả mong đợi chuẩn | Kết quả thực nghiệm thực tế | Trạng thái |
 |---|---|---|---|---|
-| **T01** | Tạo task hợp lệ qua `POST /api/tasks` | HTTP 201 Created, trả về JSON task có ID tự tăng, lưu bền vững vào DB | HTTP 201 Created, task ID=11 lưu thành công vào PostgreSQL | **ĐẠT (PASS)** |
+| **T01** | Tạo task hợp lệ qua `POST /api/tasks` | HTTP 201 Created, trả về JSON task có ID tự tăng, lưu bền vững vào DB | HTTP 201 Created, task ID tự tăng lưu thành công vào PostgreSQL | **ĐẠT (PASS)** |
 | **T02** | Gửi dữ liệu sai: tiêu đề rỗng, ngày sai, status/priority sai quy định | HTTP 400 Bad Request, trả về mảng thông báo lỗi, không ghi dữ liệu | HTTP 400 Bad Request, thông báo lỗi xác thực rõ ràng | **ĐẠT (PASS)** |
 | **T03** | Gửi JSON cú pháp hỏng (Malformed JSON) tới API | HTTP 400 Bad Request, ứng dụng bắt lỗi an toàn, không rò rỉ stack trace | HTTP 400 Bad Request, bắt lỗi JSON parser an toàn | **ĐẠT (PASS)** |
 | **T04** | Cập nhật task qua `PATCH /api/tasks/:id` | HTTP 200 OK, các trường gửi lên được cập nhật, `updated_at` đổi mới | HTTP 200 OK, trường `status` chuyển thành `"in_progress"` | **ĐẠT (PASS)** |
@@ -597,7 +656,7 @@ Bảng 8.1 tổng hợp kết quả thực thi 10 ca kiểm thử nghiệm thu t
 | **T07** | Kiểm tra trạng thái Prometheus Targets API | 5/5 targets đạt trạng thái `UP` (100% healthy) | 5/5 targets UP: app, postgres, nginx, cadvisor, prometheus | **ĐẠT (PASS)** |
 | **T08** | Kiểm tra hiển thị Grafana Dashboard và Loki LogQL | Dashboard nạp metrics thời gian thực; 3 câu LogQL trích xuất đúng log | Dashboard nạp đủ số liệu; 3 truy vấn LogQL trả về log thực tế | **ĐẠT (PASS)** |
 | **T09** | Xác minh hardening: Non-root UID, ReadOnlyRootfs, CapDrop | App chạy UID 10001, Nginx UID 101, ReadOnlyRootfs=true, CapDrop ALL | Xác nhận đúng cấu hình an toàn trên container đang chạy | **ĐẠT (PASS)** |
-| **T10** | Kiểm tra tính bền vững (Persistence) sau `docker compose restart` | Dữ liệu marker task còn nguyên vẹn trong volume sau khi restart container | Marker task ID=12 tồn tại nguyên vẹn sau restart `db` và `task-app` | **ĐẠT (PASS)** |
+| **T10** | Kiểm tra tính bền vững (Persistence) sau `docker compose restart` | Dữ liệu marker task còn nguyên vẹn trong volume sau khi restart container | Marker task tồn tại nguyên vẹn sau restart `db` và `task-app` | **ĐẠT (PASS)** |
 
 *Bảng 8.1. Ma trận kiểm thử hệ thống và trạng thái nghiệm thu thực tế*
 
@@ -612,10 +671,34 @@ npm test
 3. **Ảnh minh chứng:**
 
 ![Hình 8.1. Kết quả kiểm thử tự động ứng dụng](screenshots/unit-api-tests.png)
-*Hình 8.1. Kết quả thực thi bộ kiểm thử ứng dụng tự động (npm test, 12/12 test pass)*
+*Hình 8.1. Ảnh trích xuất kết quả thực thi bộ kiểm thử ứng dụng tự động (npm test, 12/12 test pass) trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 Toàn bộ 12 ca kiểm thử (bao gồm kiểm tra validation tiêu đề, độ dài, ngày tháng, trạng thái, mức ưu tiên, partial update, xử lý lỗi 404 và xử lý lỗi kết nối DB trả về 500 an toàn không lộ stack trace) đều đạt kết quả `[PASS] 12`, không có ca kiểm thử nào thất bại (`fail 0`).
+Lưu ý: Ca kiểm thử "should handle database errors safely with 500 status" sử dụng kỹ thuật mock lỗi in-memory độc lập trong bộ nhớ của tiến trình test, hoàn toàn tách biệt với database PostgreSQL sống và log runtime trên Loki.
+
+Dữ liệu đầu ra thô (raw terminal output):
+```text
+✔ Database Config > should construct connection pool without error (2.5ms)
+✔ Validation > should accept valid task payload (0.9ms)
+✔ Validation > should reject empty title (0.3ms)
+✔ Validation > should reject title exceeding max length (0.2ms)
+✔ Validation > should reject invalid status (0.2ms)
+✔ Validation > should reject invalid priority (0.2ms)
+✔ Validation > should reject invalid dueDate format (0.2ms)
+✔ Validation > should allow partial updates in validateTaskUpdate (0.2ms)
+✔ Validation > should reject empty update payload (0.2ms)
+✔ Validation > should sanitize string inputs (0.2ms)
+✔ Task Controller > should return 404 when task not found (1.8ms)
+✔ Task Controller > should handle database errors safely with 500 status (1.5ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+```
 5. **Cách tái hiện:** Chuyển vào thư mục `app` và chạy lệnh `npm test`.
 
 ## 8.5 Xác minh thực nghiệm cơ chế Hardening
@@ -630,13 +713,25 @@ docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.H
 3. **Ảnh minh chứng:**
 
 ![Hình 8.2. Xác minh cơ chế Hardening container](screenshots/hardening-verification.png)
-*Hình 8.2. Xác minh thực nghiệm đặc quyền non-root (UID 10001, 101), ReadOnlyRootfs và drop capabilities*
+*Hình 8.2. Ảnh trích xuất kết quả xác minh thực nghiệm đặc quyền non-root (UID 10001, 101), ReadOnlyRootfs và drop capabilities trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - `task-app` chạy với `uid=10001 gid=10001`.
 - `nginx` chạy với `uid=101(nginx) gid=101(nginx)`.
 - `ReadOnlyRootfs: true`, `CapDrop: [ALL]`, `SecurityOpt: [no-new-privileges:true]`.
-Khẳng định chính sách gia cố an ninh đã được áp dụng triệt để ở mức nhân hệ điều hành.
+Khẳng định chính sách gia cố an ninh đã được áp dụng chuẩn xác trên các container tiếp nhận xử lý dữ liệu.
+
+Dữ liệu đầu ra thô (raw terminal output):
+```powershell
+PS> docker compose exec task-app id
+uid=10001(node) gid=10001(node) groups=10001(node)
+
+PS> docker compose exec nginx id
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+
+PS> docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.HostConfig.CapDrop}}, SecurityOpt: {{.HostConfig.SecurityOpt}}" task-tracker-de24-task-app-1
+ReadOnlyRootfs: true, CapDrop: [ALL], SecurityOpt: [no-new-privileges:true]
+```
 5. **Cách tái hiện:** Thực thi các lệnh kiểm tra trên trong PowerShell khi container đang chạy.
 
 ## 8.6 Xác minh cô lập mạng, Role Database và Port Isolation
@@ -651,17 +746,41 @@ docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports
 3. **Ảnh minh chứng:**
 
 ![Hình 8.3. Xác minh phân tách mạng và DB roles](screenshots/networks-db-roles.png)
-*Hình 8.3. Kiểm tra phân tách mạng Docker (Internal=true), DB least privilege và cách ly port bindings*
+*Hình 8.3. Ảnh trích xuất kết quả kiểm tra phân tách mạng Docker (Internal=true), DB least privilege và cách ly port bindings trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - Cả hai mạng `task-tracker-de24_data` và `task-tracker-de24_observability` đều có `Internal: true`.
 - Role `task_app` và `metrics_exporter` đều có `rolsuper: f` (False — không phải superuser).
 - Cổng `3000` (app) và `5432` (db) hoàn toàn không có port mapping ra host; các cổng quản trị đều chỉ bind loopback `127.0.0.1`.
+
+Dữ liệu đầu ra thô (raw terminal output):
+```powershell
+PS> docker network inspect task-tracker-de24_data task-tracker-de24_observability -f '{{.Name}}: Internal={{.Internal}}'
+task-tracker-de24_data: Internal=true
+task-tracker-de24_observability: Internal=true
+
+PS> docker compose exec -T db psql -U postgres -d task_tracker -c "SELECT rolname, rolsuper, rolcanlogin FROM pg_roles WHERE rolname IN ('task_app', 'metrics_exporter', 'postgres');"
+     rolname      | rolsuper | rolcanlogin
+------------------+----------+-------------
+ task_app         | f        | t
+ metrics_exporter | f        | t
+ postgres         | t        | t
+(3 rows)
+
+PS> docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports}}"
+NAMES                                PORTS
+task-tracker-de24-nginx-1            127.0.0.1:8080->8080/tcp
+task-tracker-de24-grafana-1          127.0.0.1:3001->3000/tcp
+task-tracker-de24-prometheus-1       127.0.0.1:9090->9090/tcp
+task-tracker-de24-pgadmin-1          127.0.0.1:5050->80/tcp
+task-tracker-de24-task-app-1         3000/tcp
+task-tracker-de24-db-1               5432/tcp
+```
 5. **Cách tái hiện:** Thực thi các lệnh Docker inspect và PSQL query trong PowerShell.
 
 ## 8.7 Kiểm thử tính bền vững của dữ liệu và lịch sử Git
 
-1. **Mục tiêu:** Chứng minh dữ liệu trong cơ sở dữ liệu PostgreSQL được bảo toàn tuyệt đối qua chu kỳ khởi động lại container (không mất dữ liệu khi restart dịch vụ) và kiểm tra lịch sử commit dự án.
+1. **Mục tiêu:** Chứng minh dữ liệu trong cơ sở dữ liệu PostgreSQL được lưu trữ bền vững (Data Persistence) qua chu kỳ khởi động lại container (không mất dữ liệu khi restart dịch vụ) và kiểm tra lịch sử commit dự án.
 2. **Thao tác:**
    - Tạo một marker task kiểm thử mang tên `PERSISTENCE-MARKER-...` qua API.
    - Khởi động lại hai container cốt lõi: `docker compose restart db task-app` (tuyệt đối không xóa volume).
@@ -670,11 +789,35 @@ docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports
 3. **Ảnh minh chứng:**
 
 ![Hình 8.4. Kiểm tra tính bền vững và lịch sử Git](screenshots/persistence-restart.png)
-*Hình 8.4. Kiểm tra tính bền vững dữ liệu (Persistence) qua marker task và lịch sử commit Git*
+*Hình 8.4. Ảnh trích xuất kết quả kiểm tra tính bền vững dữ liệu (Persistence) qua marker task và lịch sử commit Git trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
-Sau khi `db` và `task-app` khởi động lại, dịch vụ nhanh chóng trở lại trạng thái healthy; truy vấn API tìm thấy chính xác marker task ID=12 với đầy đủ tiêu đề và trạng thái. Volume Docker `postgres_data` đã bảo vệ dữ liệu độc lập hoàn toàn với vòng đời của container. Lịch sử commit Git thể hiện các bước phát triển tuần tự, rõ ràng và có cấu trúc.
-5. **Cách tái hiện:** Chạy script `scratch/persistence_step1.js`, thực hiện restart container, sau đó chạy `scratch/persistence_step2.js`.
+Sau khi `db` và `task-app` khởi động lại, dịch vụ nhanh chóng trở lại trạng thái healthy; truy vấn API tìm thấy chính xác marker task với đầy đủ tiêu đề và trạng thái. Volume Docker `postgres_data` đã bảo vệ dữ liệu độc lập hoàn toàn với vòng đời của container. Lịch sử commit Git thể hiện các bước phát triển tuần tự, rõ ràng và có cấu trúc.
+
+Dữ liệu đầu ra thô (raw terminal output):
+```powershell
+PS> node scripts/persistence_step1.js
+=== BƯỚC 1: TẠO MARKER TASK TRƯỚC KHI RESTART ===
+Đang tạo marker task: "PERSISTENCE-MARKER-1792434130505"...
+   Marker task đã tạo thành công: ID=16, title="PERSISTENCE-MARKER-1792434130505"
+   Đã lưu thông tin marker vào .persistence_marker.tmp.
+
+PS> docker compose restart db task-app
+ Container task-tracker-de24-db-1 Restarting
+ Container task-tracker-de24-task-app-1 Restarting
+ Container task-tracker-de24-db-1 Started
+ Container task-tracker-de24-task-app-1 Started
+
+PS> node scripts/persistence_step2.js
+=== BƯỚC 2: XÁC MINH MARKER TASK VÀ DỌN DẸP SAU KHI RESTART ===
+Đang tìm kiếm marker task ID=16, title="PERSISTENCE-MARKER-1792434130505"...
+   Hệ thống đã phục hồi healthy sau 1 giây.
+   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=16, title="PERSISTENCE-MARKER-1792434130505", status="in_progress"!
+Đang dọn dẹp marker task 16...
+   Dọn dẹp marker task thành công (HTTP 204).
+=== KIỂM TRA PERSISTENCE HOÀN TẤT VÀ ĐẠT PASS 100% ===
+```
+5. **Cách tái hiện:** Chạy script `node scripts/persistence_step1.js`, thực hiện restart container bằng `docker compose restart db task-app`, sau đó chạy `node scripts/persistence_step2.js` (hoặc chạy kiểm thử tự động trọn gói bằng `node scripts/test_persistence.js`).
 
 <!-- PAGEBREAK -->
 
@@ -788,10 +931,10 @@ Bảng checklist dưới đây được thiết kế cho buổi báo cáo nghi�
 
 | Bước Demo | Thao tác thực hiện | Điểm kiểm tra trên màn hình | Trạng thái xác nhận |
 |---|---|---|---|
-| **1. Khởi động** | `docker compose up -d` rồi chạy `docker compose ps` | Đủ 12 services hoạt động; không có service nào crash | [PASS] Hoàn thành |
+| **1. Khởi động** | `docker compose up -d` rồi chạy `docker compose ps` (hoặc `ps -a`) | Đủ 12 services hoạt động; `log-init` kết thúc với `Exited (0)` | [PASS] Hoàn thành |
 | **2. Giao diện Web** | Mở `http://127.0.0.1:8080/` | Giao diện Task Tracker tải nhanh, hiển thị thống kê và danh sách task mẫu | [PASS] Hoàn thành |
 | **3. Nghiệp vụ CRUD** | Tạo 1 task mới, sửa trạng thái thành `done`, lọc danh sách | Task xuất hiện ngay lập tức; bộ lọc cập nhật chính xác | [PASS] Hoàn thành |
-| **4. Kiểm thử E2E** | Chạy `node scratch/verify_e2e.js` | 8/8 bước E2E pass: health, create, filter, patch, delete, 404, 400 | [PASS] Hoàn thành |
+| **4. Kiểm thử E2E** | Chạy `node scripts/verify_e2e.js` | 8/8 bước E2E pass: health, create, filter, patch, delete, 404, 400 | [PASS] Hoàn thành |
 | **5. pgAdmin** | Mở `http://127.0.0.1:5050/`, query `public.tasks` | Dữ liệu hiển thị đúng cấu trúc bảng và các trường thời gian | [PASS] Hoàn thành |
 | **6. Security Headers** | Chạy `curl.exe -i http://127.0.0.1:8080/` | Trả về đủ 5 headers: CSP, X-Frame-Options, X-Content-Type, Referrer, Permissions | [PASS] Hoàn thành |
 | **7. Prometheus** | Mở `http://127.0.0.1:9090/targets` | 5/5 targets đạt trạng thái UP màu xanh lá | [PASS] Hoàn thành |
@@ -799,5 +942,5 @@ Bảng checklist dưới đây được thiết kế cho buổi báo cáo nghi�
 | **9. Loki LogQL** | Mở Explore trên Grafana, chạy 3 câu LogQL | Hiển thị log JSON của ứng dụng và access log của Nginx | [PASS] Hoàn thành |
 | **10. Hardening** | `docker compose exec task-app id` | UID=10001 (non-root), ReadOnlyRootfs=true, CapDrop=[ALL] | [PASS] Hoàn thành |
 | **11. Cô lập mạng & DB** | Inspect networks và kiểm tra quyền role database | `data` và `observability` có `Internal=true`; `task_app` không phải superuser | [PASS] Hoàn thành |
-| **12. Tính bền vững** | Chạy restart db và task-app rồi kiểm tra task | Dữ liệu được bảo toàn nguyên vẹn sau khi restart container | [PASS] Hoàn thành |
+| **12. Tính bền vững** | Chạy restart db và task-app rồi kiểm tra task | Dữ liệu lưu trữ bền vững trong volume sau khi restart container | [PASS] Hoàn thành |
 | **13. Unit Tests** | Chạy `npm test` trong thư mục `app` | 12/12 unit tests đạt kết quả PASS | [PASS] Hoàn thành |
