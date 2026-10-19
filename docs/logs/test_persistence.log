@@ -1,0 +1,17 @@
+=== BƯỚC 1: TẠO MARKER TASK TRƯỚC KHI RESTART ===
+Đang tạo marker task: "PERSISTENCE-MARKER-1792436048294"...
+   Marker task đã tạo thành công: ID=18, title="PERSISTENCE-MARKER-1792436048294"
+   Đã lưu thông tin marker vào .persistence_marker.tmp.
+
+--- TỰ ĐỘNG KHỞI ĐỘNG LẠI CONTAINER db VÀ task-app ---
+ Container task-tracker-de24-task-app-1 Restarting 
+ Container task-tracker-de24-db-1 Restarting 
+ Container task-tracker-de24-db-1 Started 
+ Container task-tracker-de24-task-app-1 Started 
+=== BƯỚC 2: XÁC MINH MARKER TASK VÀ DỌN DẸP SAU KHI RESTART ===
+Đang tìm kiếm marker task ID=18, title="PERSISTENCE-MARKER-1792436048294"...
+   Hệ thống đã phục hồi healthy sau 1 giây.
+   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=18, title="PERSISTENCE-MARKER-1792436048294", status="in_progress"!
+Đang dọn dẹp marker task 18...
+   Dọn dẹp marker task thành công (HTTP 204).
+=== KIỂM TRA PERSISTENCE HOÀN TẤT VÀ ĐẠT PASS 100% ===

@@ -275,7 +275,7 @@ Cơ sở dữ liệu `task_tracker` được khởi tạo tự động thông qu
 - `idx_tasks_status_created_at`: Đánh chỉ mục hỗn hợp trên `(status, created_at DESC)` phục vụ phân trang và lọc theo trạng thái.
 - `idx_tasks_due_date`: Đánh chỉ mục trên `due_date` hỗ trợ tìm kiếm và sắp xếp các công việc sắp tới hạn.
 
-Về phân quyền, script khởi tạo database tạo ra tài khoản `task_app` dành riêng cho ứng dụng Express. Tài khoản này chỉ được cấp quyền `CONNECT` trên database `task_tracker` và quyền `SELECT, INSERT, UPDATE, DELETE` trên bảng `tasks`. Tài khoản không có quyền `SUPERUSER`, không có quyền tạo bảng mới (`CREATE TABLE`) hay can thiệp vào các schema hệ thống, thực thi triệt để nguyên tắc đặc quyền tối thiểu.
+Về phân quyền, script khởi tạo database (`db/init/01-create-roles.sh`) tạo ra tài khoản `task_app` dành riêng cho ứng dụng Express với quyền `CONNECT ON DATABASE task_tracker` cùng quyền `USAGE, CREATE ON SCHEMA public`. Quyền `USAGE, CREATE` trên schema `public` là bắt buộc để tiến trình Node.js khi khởi động (`start()` trong `app/src/server.js`) có thể tự động thực thi tệp migration `001_tasks.sql` nhằm khởi tạo bảng `tasks` (`CREATE TABLE IF NOT EXISTS`) và các chỉ mục tối ưu (`CREATE INDEX IF NOT EXISTS`). Tài khoản `task_app` là tài khoản non-superuser (`rolsuper = false`), không có quyền can thiệp vào các schema hệ thống hoặc cấu hình quản trị cụm PostgreSQL, bảo đảm tuân thủ nguyên tắc đặc quyền tối thiểu phù hợp với kiến trúc tự động hóa migration của ứng dụng.
 
 ## 4.3 Thao tác thực tế trên giao diện người dùng
 
@@ -334,21 +334,21 @@ node scripts/verify_e2e.js
 - Dữ liệu thiếu tiêu đề hoặc JSON cú pháp hỏng bị từ chối với mã `400 Bad Request`, không gây crash server hay rò rỉ mã nguồn.
 - Toàn bộ 8/8 bước kiểm thử E2E đạt PASS 100%.
 
-Dữ liệu đầu ra thô (raw terminal output) ghi nhận từ phiên thực thi:
+Dữ liệu đầu ra thô (raw terminal output) ghi nhận từ phiên thực thi (được lưu tại `docs/logs/verify_e2e.log`):
 ```text
 === BẮT ĐẦU E2E VERIFICATION QUA NGINX ===
 Endpoint kiểm thử: http://127.0.0.1:8080
 1. Kiểm tra GET /health...
    Health status: {"status":"ok","database":"connected"}
-2. Tạo task kiểm thử: "VERIFY-p0am1n"...
-   Task tạo thành công: ID=15, title="VERIFY-p0am1n", priority="high"
-3. GET danh sách và lọc task với từ khóa "VERIFY-p0am1n"...
-   Tìm thấy 1 task khớp từ khóa "VERIFY-p0am1n"
-4. Cập nhật PATCH trạng thái task 15 thành "in_progress"...
+2. Tạo task kiểm thử: "VERIFY-m1mjis"...
+   Task tạo thành công: ID=17, title="VERIFY-m1mjis", priority="high"
+3. GET danh sách và lọc task với từ khóa "VERIFY-m1mjis"...
+   Tìm thấy 1 task khớp từ khóa "VERIFY-m1mjis"
+4. Cập nhật PATCH trạng thái task 17 thành "in_progress"...
    Task sau cập nhật: status="in_progress"
-5. Xóa DELETE task 15...
+5. Xóa DELETE task 17...
    Xóa thành công (HTTP 204 No Content)
-6. Xác minh PATCH task đã xóa (ID=15) trả về HTTP 404...
+6. Xác minh PATCH task đã xóa (ID=17) trả về HTTP 404...
    Kết quả PATCH task đã xóa: status=404
 7. Xác minh dữ liệu sai (tiêu đề rỗng, status sai) trả về HTTP 400...
    Kết quả dữ liệu sai: status=400
@@ -575,7 +575,7 @@ node scripts/check_loki.js
   * Phân biệt lỗi kiểm thử và log runtime: Các lỗi kết nối database giả lập phát sinh trong bộ kiểm thử đơn vị (`npm test`) được tạo ra bởi mock in-memory trong tiến trình Node.js độc lập của test runner, tách biệt hoàn toàn với log vận hành runtime thực tế được Promtail ghi nhận và đẩy về Loki.
 - Xác nhận 3/3 truy vấn LogQL đều đạt kết quả PASS thực tế trên dữ liệu hoạt động sống của hệ thống.
 
-Dữ liệu đầu ra thô (raw terminal output) từ script kiểm chứng:
+Dữ liệu đầu ra thô (raw terminal output) từ script kiểm chứng (được lưu tại `docs/logs/check_loki.log`):
 ```text
 === BẮT ĐẦU XÁC MINH TRUY VẤN LOGQL QUA LOKI ===
 Grafana URL: http://127.0.0.1:3001
@@ -584,25 +584,28 @@ Loki Datasource UID: "loki" (URL nội bộ: http://loki:3100)
 --- [1/3] Truy vấn 1 (Log JSON ứng dụng) ---
     LogQL: {service="task-tracker"} | json
     Mục đích: Trích xuất toàn bộ trường JSON của ứng dụng Express
-    Trạng thái: success | Streams tìm thấy: 5
+    Trạng thái: success | Streams: 10 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 1
-    Bản ghi mẫu: {"level":30,"time":1792434117621,"service":"task-tracker","environment":"production","requestId":"66fc0ab7-f985-4fd0-941e-b8f45aff3974","method":"POST...
+    Bản ghi mẫu: {"level":30,"time":1792436017087,"service":"task-tracker","environment":"production","requestId":"0e7407b8-8624-4153-a9f3-4a24c3426a68","method":"GET"...
 
 --- [2/3] Truy vấn 2 (Lọc log thành công 2xx) ---
     LogQL: {service="task-tracker"} | json | statusCode >= 200 and statusCode < 300
     Mục đích: Sàng lọc các yêu cầu HTTP thành công (mã 200, 201, 204)
-    Trạng thái: success | Streams tìm thấy: 5
+    Trạng thái: success | Streams: 10 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 1
-    Bản ghi mẫu: {"level":30,"time":1792434117563,"service":"task-tracker","environment":"production","requestId":"7e4e7ba5-1eb7-4952-aa5d-83cbe07bd3c6","method":"GET"...
+    Bản ghi mẫu: {"level":30,"time":1792436017087,"service":"task-tracker","environment":"production","requestId":"0e7407b8-8624-4153-a9f3-4a24c3426a68","method":"GET"...
 
 --- [3/3] Truy vấn 3 (Access log Nginx cho API tasks) ---
     LogQL: {service="nginx", log_type="access"} |= "/api/tasks"
     Mục đích: Lọc nhật ký truy cập Nginx Reverse Proxy theo endpoint /api/tasks
-    Trạng thái: success | Streams tìm thấy: 1
-    Số bản ghi trong stream đầu tiên: 5
-    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:18:21:57 +0000] "POST /api/tasks HTTP/1.1" 400 35 "-" "node"
+    Trạng thái: success | Streams: 1 | Tổng log entries: 10
+    Số bản ghi trong stream đầu tiên: 10
+    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:18:22:22 +0000] "DELETE /api/tasks/16 HTTP/1.1" 204 0 "-" "node"
 
 === XÁC NHẬN: 3/3 TRUY VẤN LOGQL HOẠT ĐỘNG CHÍNH XÁC VÀ TRẢ VỀ DỮ LIỆU THẬT ===
+  ✓ Truy vấn 1 (Log JSON ứng dụng): 10 stream(s), 10 log entries.
+  ✓ Truy vấn 2 (Lọc log thành công 2xx): 10 stream(s), 10 log entries.
+  ✓ Truy vấn 3 (Access log Nginx cho API tasks): 1 stream(s), 10 log entries.
 ```
 5. **Cách tái hiện:** Chạy script `node scripts/check_loki.js` trong PowerShell.
 
@@ -639,7 +642,7 @@ Bảo vệ an toàn cho hệ thống container đòi hỏi việc triển khai n
   * Hai mạng `data` và `observability` được cấu hình cờ `internal: true`. Docker không cấp gateway ra ngoài cho hai mạng này. Các dịch vụ chỉ tham gia mạng nội bộ (như PostgreSQL `db`, máy chủ `loki`, `promtail`, `cadvisor`) hoàn toàn không có đường định tuyến ra ngoài Internet, ngăn ngừa việc bị dò quét cổng hoặc tấn công trực tiếp.
   * Hai mạng `front` và `management` là mạng bridge thông thường không có cờ internal. Các container đa mạng (multi-homed) như `task-app` (nối cả `front`, `data`, `observability`) hoặc `grafana`, `prometheus`, `pgadmin` (nối `management`) sở hữu giao diện mạng bridge và vẫn có khả năng định tuyến ra ngoài khi cần thiết qua interface non-internal tương ứng.
 - **Che giấu cổng dịch vụ:** Các cổng `3000` (Node.js) và `5432` (PostgreSQL) hoàn toàn không được map ra cổng host. Mọi truy cập dữ liệu nghiệp vụ bắt buộc phải đi qua Nginx hoặc pgAdmin.
-- **Phân quyền Role PostgreSQL:** Role `task_app` và `metrics_exporter` đều có cờ `rolsuper = false`. Ứng dụng nghiệp vụ không có quyền superuser, chỉ được thao tác DML trên bảng `public.tasks` và không thể can thiệp vào các bảng hệ thống hoặc cấu hình cơ sở dữ liệu.
+- **Phân quyền Role PostgreSQL:** Cả hai role `task_app` và `metrics_exporter` đều có cờ `rolsuper = false`. Trong đó, `task_app` được cấp quyền `CONNECT ON DATABASE task_tracker` cùng quyền `USAGE, CREATE ON SCHEMA public` (`db/init/01-create-roles.sh`) nhằm phục vụ cơ chế tự động chạy migration DDL (`001_tasks.sql`) khởi tạo bảng `tasks` và chỉ mục khi ứng dụng khởi động, đồng thời thực hiện các thao tác DML (CRUD) trên dữ liệu công việc mà không sở hữu quyền superuser hay khả năng can thiệp vào các cấu hình quản trị hệ thống. Role `metrics_exporter` chỉ được cấp quyền `CONNECT` và membership `pg_monitor` để phục vụ trích xuất số liệu giám sát.
 
 ## 8.3 Ma trận kiểm thử toàn diện hệ thống
 
@@ -674,23 +677,26 @@ npm test
 *Hình 8.1. Ảnh trích xuất kết quả thực thi bộ kiểm thử ứng dụng tự động (npm test, 12/12 test pass) trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
-Toàn bộ 12 ca kiểm thử (bao gồm kiểm tra validation tiêu đề, độ dài, ngày tháng, trạng thái, mức ưu tiên, partial update, xử lý lỗi 404 và xử lý lỗi kết nối DB trả về 500 an toàn không lộ stack trace) đều đạt kết quả `[PASS] 12`, không có ca kiểm thử nào thất bại (`fail 0`).
-Lưu ý: Ca kiểm thử "should handle database errors safely with 500 status" sử dụng kỹ thuật mock lỗi in-memory độc lập trong bộ nhớ của tiến trình test, hoàn toàn tách biệt với database PostgreSQL sống và log runtime trên Loki.
+Toàn bộ 12 ca kiểm thử (bao gồm kiểm tra validation tiêu đề, độ dài, ngày tháng, trạng thái, mức ưu tiên, partial update, xử lý lỗi 404 và xử lý lỗi kết nối DB trả về 500 an toàn không lộ stack trace) đều đạt kết quả `pass 12`, không có ca kiểm thử nào thất bại (`fail 0`).
+Lưu ý: Ca kiểm thử "Returns 500 without leaking database details or stack trace on DB error" và "GET /health returns 503 when database fails" sử dụng kỹ thuật mock lỗi in-memory độc lập trong bộ nhớ của tiến trình test runner (`node --test`), hoàn toàn tách biệt với database PostgreSQL sống và log runtime trên Loki.
 
-Dữ liệu đầu ra thô (raw terminal output):
+Dữ liệu đầu ra thô (raw terminal output) trích xuất trực tiếp từ file nhật ký kiểm thử `docs/logs/unit_tests.log`:
 ```text
-✔ Database Config > should construct connection pool without error (2.5ms)
-✔ Validation > should accept valid task payload (0.9ms)
-✔ Validation > should reject empty title (0.3ms)
-✔ Validation > should reject title exceeding max length (0.2ms)
-✔ Validation > should reject invalid status (0.2ms)
-✔ Validation > should reject invalid priority (0.2ms)
-✔ Validation > should reject invalid dueDate format (0.2ms)
-✔ Validation > should allow partial updates in validateTaskUpdate (0.2ms)
-✔ Validation > should reject empty update payload (0.2ms)
-✔ Validation > should sanitize string inputs (0.2ms)
-✔ Task Controller > should return 404 when task not found (1.8ms)
-✔ Task Controller > should handle database errors safely with 500 status (1.5ms)
+> task-tracker-de24@1.0.0 test
+> node --test
+
+✔ GET /health returns 200 and ok when database is healthy (41.6959ms)
+✔ GET /health returns 503 when database fails (8.4362ms)
+✔ GET /metrics returns 200 with Prometheus text metrics (8.5125ms)
+✔ Full CRUD flow: create, read, filter, search, update, delete (110.1947ms)
+✔ Input validation rejects invalid requests with 400 (150.6887ms)
+✔ Returns 404 when updating or deleting a nonexistent task (6.1224ms)
+✔ Returns 500 without leaking database details or stack trace on DB error (24.6405ms)
+✔ accepts a valid task and normalizes optional values (1.7221ms)
+✔ rejects a title that is blank or too long (0.159ms)
+✔ rejects unsupported status, priority, and malformed date (0.1284ms)
+✔ partial updates validate only submitted fields (0.1966ms)
+✔ accepts a task without dueDate and defaults dueDate to null (0.1172ms)
 ℹ tests 12
 ℹ suites 0
 ℹ pass 12
@@ -698,8 +704,9 @@ Dữ liệu đầu ra thô (raw terminal output):
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
+ℹ duration_ms 593.3188
 ```
-5. **Cách tái hiện:** Chuyển vào thư mục `app` và chạy lệnh `npm test`.
+5. **Cách tái hiện:** Chuyển vào thư mục `app`, chạy lệnh `npm test` và đối chiếu với file nhật ký `docs/logs/unit_tests.log`.
 
 ## 8.5 Xác minh thực nghiệm cơ chế Hardening
 
@@ -721,10 +728,10 @@ docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.H
 - `ReadOnlyRootfs: true`, `CapDrop: [ALL]`, `SecurityOpt: [no-new-privileges:true]`.
 Khẳng định chính sách gia cố an ninh đã được áp dụng chuẩn xác trên các container tiếp nhận xử lý dữ liệu.
 
-Dữ liệu đầu ra thô (raw terminal output):
+Dữ liệu đầu ra thô (raw terminal output) trích xuất từ phiên kiểm tra (được lưu tại `docs/logs/hardening.log`):
 ```powershell
 PS> docker compose exec task-app id
-uid=10001(node) gid=10001(node) groups=10001(node)
+uid=10001 gid=10001 groups=10001
 
 PS> docker compose exec nginx id
 uid=101(nginx) gid=101(nginx) groups=101(nginx)
@@ -753,7 +760,7 @@ docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports
 - Role `task_app` và `metrics_exporter` đều có `rolsuper: f` (False — không phải superuser).
 - Cổng `3000` (app) và `5432` (db) hoàn toàn không có port mapping ra host; các cổng quản trị đều chỉ bind loopback `127.0.0.1`.
 
-Dữ liệu đầu ra thô (raw terminal output):
+Dữ liệu đầu ra thô (raw terminal output) trích xuất từ phiên kiểm tra (được lưu tại `docs/logs/networks_roles.log`):
 ```powershell
 PS> docker network inspect task-tracker-de24_data task-tracker-de24_observability -f '{{.Name}}: Internal={{.Internal}}'
 task-tracker-de24_data: Internal=true
@@ -794,30 +801,28 @@ task-tracker-de24-db-1               5432/tcp
 4. **Kết quả quan sát và ý nghĩa:**
 Sau khi `db` và `task-app` khởi động lại, dịch vụ nhanh chóng trở lại trạng thái healthy; truy vấn API tìm thấy chính xác marker task với đầy đủ tiêu đề và trạng thái. Volume Docker `postgres_data` đã bảo vệ dữ liệu độc lập hoàn toàn với vòng đời của container. Lịch sử commit Git thể hiện các bước phát triển tuần tự, rõ ràng và có cấu trúc.
 
-Dữ liệu đầu ra thô (raw terminal output):
+Dữ liệu đầu ra thô (raw terminal output) trích xuất từ phiên kiểm tra (được lưu tại `docs/logs/test_persistence.log`):
 ```powershell
-PS> node scripts/persistence_step1.js
+PS> node scripts/test_persistence.js
 === BƯỚC 1: TẠO MARKER TASK TRƯỚC KHI RESTART ===
-Đang tạo marker task: "PERSISTENCE-MARKER-1792434130505"...
-   Marker task đã tạo thành công: ID=16, title="PERSISTENCE-MARKER-1792434130505"
+Đang tạo marker task: "PERSISTENCE-MARKER-1792436048294"...
+   Marker task đã tạo thành công: ID=18, title="PERSISTENCE-MARKER-1792436048294"
    Đã lưu thông tin marker vào .persistence_marker.tmp.
 
-PS> docker compose restart db task-app
- Container task-tracker-de24-db-1 Restarting
+--- TỰ ĐỘNG KHỞI ĐỘNG LẠI CONTAINER db VÀ task-app ---
  Container task-tracker-de24-task-app-1 Restarting
+ Container task-tracker-de24-db-1 Restarting
  Container task-tracker-de24-db-1 Started
  Container task-tracker-de24-task-app-1 Started
-
-PS> node scripts/persistence_step2.js
 === BƯỚC 2: XÁC MINH MARKER TASK VÀ DỌN DẸP SAU KHI RESTART ===
-Đang tìm kiếm marker task ID=16, title="PERSISTENCE-MARKER-1792434130505"...
+Đang tìm kiếm marker task ID=18, title="PERSISTENCE-MARKER-1792436048294"...
    Hệ thống đã phục hồi healthy sau 1 giây.
-   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=16, title="PERSISTENCE-MARKER-1792434130505", status="in_progress"!
-Đang dọn dẹp marker task 16...
+   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=18, title="PERSISTENCE-MARKER-1792436048294", status="in_progress"!
+Đang dọn dẹp marker task 18...
    Dọn dẹp marker task thành công (HTTP 204).
 === KIỂM TRA PERSISTENCE HOÀN TẤT VÀ ĐẠT PASS 100% ===
 ```
-5. **Cách tái hiện:** Chạy script `node scripts/persistence_step1.js`, thực hiện restart container bằng `docker compose restart db task-app`, sau đó chạy `node scripts/persistence_step2.js` (hoặc chạy kiểm thử tự động trọn gói bằng `node scripts/test_persistence.js`).
+5. **Cách tái hiện:** Chạy kiểm thử tự động toàn trình bằng `node scripts/test_persistence.js` (hoặc chạy tuần tự từng bước bằng `node scripts/persistence_step1.js`, `docker compose restart db task-app`, và `node scripts/persistence_step2.js`).
 
 <!-- PAGEBREAK -->
 

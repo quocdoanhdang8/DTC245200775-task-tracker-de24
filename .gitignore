@@ -14,9 +14,12 @@ coverage/
 
 # Local Docker/runtime artifacts
 data/
-logs/
+/logs/
+app/logs/
 *.pid
 *.log
+!docs/logs/
+!docs/logs/**
 *.tmp
 
 # Editor / OS

@@ -1,0 +1,8 @@
+PS> docker compose exec task-app id
+uid=10001 gid=10001 groups=10001
+
+PS> docker compose exec nginx id
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+
+PS> docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.HostConfig.CapDrop}}, SecurityOpt: {{.HostConfig.SecurityOpt}}" task-tracker-de24-task-app-1
+ReadOnlyRootfs: true, CapDrop: [ALL], SecurityOpt: [no-new-privileges:true]
