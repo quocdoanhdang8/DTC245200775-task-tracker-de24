@@ -1,8 +1,10 @@
-PS> docker compose exec task-app id
+﻿Captured live: 2026-10-20 02:41:10 +07:00
+TASK TRACKER DE24 | hardening-verification | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> docker compose exec -T task-app id; docker compose exec -T nginx id; docker inspect (selected fields only)
+SERVICE: task-app
 uid=10001 gid=10001 groups=10001
-
-PS> docker compose exec nginx id
+User=10001:10001 | ReadOnly=true | CapDrop=["ALL"] | SecurityOpt=["no-new-privileges:true"]
+SERVICE: nginx
 uid=101(nginx) gid=101(nginx) groups=101(nginx)
-
-PS> docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.HostConfig.CapDrop}}, SecurityOpt: {{.HostConfig.SecurityOpt}}" task-tracker-de24-task-app-1
-ReadOnlyRootfs: true, CapDrop: [ALL], SecurityOpt: [no-new-privileges:true]
+User=101 | ReadOnly=true | CapDrop=["ALL"] | SecurityOpt=["no-new-privileges:true"]
+COMPLETED: 2026-10-20 02:41:11 +07:00

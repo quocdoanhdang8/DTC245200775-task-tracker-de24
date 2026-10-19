@@ -1,3 +1,6 @@
+﻿Captured live: 2026-10-20 02:41:07 +07:00
+TASK TRACKER DE24 | loki-logql-verification | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> node scripts/check_loki.js
 === BẮT ĐẦU XÁC MINH TRUY VẤN LOGQL QUA LOKI ===
 Grafana URL: http://127.0.0.1:3001
 Loki Datasource UID: "loki" (URL nội bộ: http://loki:3100)
@@ -7,23 +10,24 @@ Loki Datasource UID: "loki" (URL nội bộ: http://loki:3100)
     Mục đích: Trích xuất toàn bộ trường JSON của ứng dụng Express
     Trạng thái: success | Streams: 10 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 1
-    Bản ghi mẫu: {"level":30,"time":1792436017087,"service":"task-tracker","environment":"production","requestId":"0e7407b8-8624-4153-a9f3-4a24c3426a68","method":"GET"...
+    Bản ghi mẫu: {"level":30,"time":1792438865381,"service":"task-tracker","environment":"production","requestId":"5f0c00b9-5aab-4e5c-ac0d-4659ee808cd5","method":"POST...
 
 --- [2/3] Truy vấn 2 (Lọc log thành công 2xx) ---
     LogQL: {service="task-tracker"} | json | statusCode >= 200 and statusCode < 300
     Mục đích: Sàng lọc các yêu cầu HTTP thành công (mã 200, 201, 204)
     Trạng thái: success | Streams: 10 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 1
-    Bản ghi mẫu: {"level":30,"time":1792436017087,"service":"task-tracker","environment":"production","requestId":"0e7407b8-8624-4153-a9f3-4a24c3426a68","method":"GET"...
+    Bản ghi mẫu: {"level":30,"time":1792438865303,"service":"task-tracker","environment":"production","requestId":"92a8ff22-5088-4f1e-8b74-7cdb96388bef","method":"GET"...
 
 --- [3/3] Truy vấn 3 (Access log Nginx cho API tasks) ---
     LogQL: {service="nginx", log_type="access"} |= "/api/tasks"
     Mục đích: Lọc nhật ký truy cập Nginx Reverse Proxy theo endpoint /api/tasks
     Trạng thái: success | Streams: 1 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 10
-    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:18:22:22 +0000] "DELETE /api/tasks/16 HTTP/1.1" 204 0 "-" "node"
+    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:19:41:05 +0000] "POST /api/tasks HTTP/1.1" 400 35 "-" "node"
 
 === XÁC NHẬN: 3/3 TRUY VẤN LOGQL HOẠT ĐỘNG CHÍNH XÁC VÀ TRẢ VỀ DỮ LIỆU THẬT ===
   ✓ Truy vấn 1 (Log JSON ứng dụng): 10 stream(s), 10 log entries.
   ✓ Truy vấn 2 (Lọc log thành công 2xx): 10 stream(s), 10 log entries.
   ✓ Truy vấn 3 (Access log Nginx cho API tasks): 1 stream(s), 10 log entries.
+COMPLETED: 2026-10-20 02:41:07 +07:00

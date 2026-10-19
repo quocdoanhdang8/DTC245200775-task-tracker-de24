@@ -1,17 +1,27 @@
+﻿Captured live: 2026-10-20 02:41:14 +07:00
+TASK TRACKER DE24 | persistence-restart | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> node scripts/test_persistence.js
 === BƯỚC 1: TẠO MARKER TASK TRƯỚC KHI RESTART ===
-Đang tạo marker task: "PERSISTENCE-MARKER-1792436048294"...
-   Marker task đã tạo thành công: ID=18, title="PERSISTENCE-MARKER-1792436048294"
+Đang tạo marker task: "PERSISTENCE-MARKER-1792438874114"...
+   Marker task đã tạo thành công: ID=22, title="PERSISTENCE-MARKER-1792438874114"
    Đã lưu thông tin marker vào .persistence_marker.tmp.
 
 --- TỰ ĐỘNG KHỞI ĐỘNG LẠI CONTAINER db VÀ task-app ---
- Container task-tracker-de24-task-app-1 Restarting 
- Container task-tracker-de24-db-1 Restarting 
- Container task-tracker-de24-db-1 Started 
- Container task-tracker-de24-task-app-1 Started 
+ Container task-tracker-de24-db-1 Restarting
+ Container task-tracker-de24-task-app-1 Restarting
+ Container task-tracker-de24-db-1 Started
+ Container task-tracker-de24-task-app-1 Started
 === BƯỚC 2: XÁC MINH MARKER TASK VÀ DỌN DẸP SAU KHI RESTART ===
-Đang tìm kiếm marker task ID=18, title="PERSISTENCE-MARKER-1792436048294"...
+Đang tìm kiếm marker task ID=22, title="PERSISTENCE-MARKER-1792438874114"...
    Hệ thống đã phục hồi healthy sau 1 giây.
-   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=18, title="PERSISTENCE-MARKER-1792436048294", status="in_progress"!
-Đang dọn dẹp marker task 18...
+   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=22, title="PERSISTENCE-MARKER-1792438874114", status="in_progress"!
+Đang dọn dẹp marker task 22...
    Dọn dẹp marker task thành công (HTTP 204).
 === KIỂM TRA PERSISTENCE HOÀN TẤT VÀ ĐẠT PASS 100% ===
+Git history at capture time:
+03c308b fix(qa): resolve 4 remaining review issues on check_loki, unit tests, db roles, and logs
+c4f1c3c docs: restore student cover info, track verification scripts, and refine security analysis
+f78a9ea docs: enhance report with step-by-step reproduction guide and real evidence screenshots
+9f01599 docs: fill student details in final report
+e45e706 docs: add pgAdmin evidence to final report
+COMPLETED: 2026-10-20 02:41:18 +07:00

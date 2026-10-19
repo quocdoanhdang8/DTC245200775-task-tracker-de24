@@ -1,0 +1,128 @@
+﻿Captured live: 2026-10-20 02:40:59 +07:00
+TASK TRACKER DE24 | compose-startup | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> docker compose config --quiet; docker compose up -d --build
+Compose configuration: exit 0
+ Image task-tracker-de24-nginx Building
+ Image task-tracker-de24-task-app Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.06kB done
+#1 DONE 0.0s
+
+#2 [nginx internal] load build definition from Dockerfile
+#2 transferring dockerfile: 123B done
+#2 DONE 0.0s
+
+#3 [task-app internal] load build definition from Dockerfile
+#3 transferring dockerfile: 371B 0.0s done
+#3 DONE 0.0s
+
+#4 [task-app internal] load metadata for docker.io/library/node:24-alpine
+#4 DONE 0.1s
+
+#5 [nginx internal] load metadata for docker.io/nginxinc/nginx-unprivileged:alpine3.24
+#5 DONE 0.1s
+
+#6 [nginx internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [task-app internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [nginx internal] load build context
+#8 transferring context: 34B done
+#8 DONE 0.0s
+
+#9 [task-app internal] load build context
+#9 transferring context: 417B done
+#9 DONE 0.0s
+
+#10 [nginx 1/2] FROM docker.io/nginxinc/nginx-unprivileged:alpine3.24@sha256:884e0b7f42f303641b0f4e78755aea647521dca0b89ca3be7992ad78b5c07434
+#10 resolve docker.io/nginxinc/nginx-unprivileged:alpine3.24@sha256:884e0b7f42f303641b0f4e78755aea647521dca0b89ca3be7992ad78b5c07434 0.0s done
+#10 DONE 0.0s
+
+#11 [nginx 2/2] COPY default.conf /etc/nginx/nginx.conf
+#11 CACHED
+
+#12 [task-app 1/7] FROM docker.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+#12 resolve docker.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 0.0s done
+#12 DONE 0.0s
+
+#13 [task-app 2/7] WORKDIR /app
+#13 CACHED
+
+#14 [task-app 4/7] RUN npm install --omit=dev --ignore-scripts     && npm cache clean --force
+#14 CACHED
+
+#15 [task-app 5/7] COPY app/src ./src
+#15 CACHED
+
+#16 [task-app 6/7] COPY app/public ./public
+#16 CACHED
+
+#17 [task-app 3/7] COPY app/package.json ./
+#17 CACHED
+
+#18 [task-app 7/7] COPY db/migrations ./db/migrations
+#18 CACHED
+
+#19 [task-app] exporting to image
+#19 exporting layers done
+#19 exporting manifest sha256:9ebd506500c32fe9bb7d44fefbf30b2588055650933297fdb93f47ed8eb5a716 done
+#19 exporting config sha256:c7ca5a962232469aa2a4a25f68afabe3cc37b4b67fc2ce16172b64ada59437c6 done
+#19 exporting attestation manifest sha256:532a61b6eca86b2858624bc7ec72d82ec63e9e3966b0647ca0132c13449fc91e
+#19 ...
+
+#20 [nginx] exporting to image
+#20 exporting layers done
+#20 exporting manifest sha256:2fcfc613966169b091220ce60d966fdaa4b945f70cfde59dedbbc00e93d4e24d done
+#20 exporting config sha256:43a23e82c37b5778714d1edd0bdc03343d801d5fe28971b7d33c86a5319d4047 done
+#20 exporting attestation manifest sha256:21435c5a8e19fd1f83cc194bd9db7a3d217129f44e753a3403c524ff2c816e2b 0.0s done
+#20 exporting manifest list sha256:f1eeab05ff3e6b4670b15eba6f9a0b91eb83cdd2a0c365c1cccd3b818533481b 0.0s done
+#20 naming to docker.io/library/task-tracker-de24-nginx:latest done
+#20 unpacking to docker.io/library/task-tracker-de24-nginx:latest 0.0s done
+#20 DONE 0.1s
+
+#19 [task-app] exporting to image
+#19 exporting attestation manifest sha256:532a61b6eca86b2858624bc7ec72d82ec63e9e3966b0647ca0132c13449fc91e 0.0s done
+#19 exporting manifest list sha256:15c6118b4f8e50150b8250ee7c92dcff731a967943328c784761e1622d56e055 0.0s done
+#19 naming to docker.io/library/task-tracker-de24-task-app:latest done
+#19 unpacking to docker.io/library/task-tracker-de24-task-app:latest 0.0s done
+#19 DONE 0.1s
+
+#21 [nginx] resolving provenance for metadata file
+#21 DONE 0.0s
+
+#22 [task-app] resolving provenance for metadata file
+#22 DONE 0.0s
+ Image task-tracker-de24-task-app Built
+ Image task-tracker-de24-nginx Built
+ Container task-tracker-de24-promtail-1 Running
+ Container task-tracker-de24-db-1 Running
+ Container task-tracker-de24-postgres-exporter-1 Running
+ Container task-tracker-de24-task-app-1 Running
+ Container task-tracker-de24-nginx-1 Running
+ Container task-tracker-de24-grafana-1 Running
+ Container task-tracker-de24-prometheus-1 Running
+ Container task-tracker-de24-nginx-exporter-1 Running
+ Container task-tracker-de24-pgadmin-1 Running
+ Container task-tracker-de24-loki-1 Running
+ Container task-tracker-de24-cadvisor-1 Running
+ Container task-tracker-de24-db-1 Waiting
+ Container task-tracker-de24-db-1 Waiting
+ Container task-tracker-de24-log-init-1 Starting
+ Container task-tracker-de24-log-init-1 Started
+ Container task-tracker-de24-db-1 Waiting
+ Container task-tracker-de24-log-init-1 Waiting
+ Container task-tracker-de24-log-init-1 Waiting
+ Container task-tracker-de24-db-1 Healthy
+ Container task-tracker-de24-db-1 Healthy
+ Container task-tracker-de24-log-init-1 Exited
+ Container task-tracker-de24-db-1 Healthy
+ Container task-tracker-de24-log-init-1 Exited
+ Container task-tracker-de24-task-app-1 Waiting
+ Container task-tracker-de24-log-init-1 Waiting
+ Container task-tracker-de24-task-app-1 Healthy
+ Container task-tracker-de24-log-init-1 Exited
+COMPLETED: 2026-10-20 02:41:02 +07:00

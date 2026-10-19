@@ -1,0 +1,20 @@
+﻿Captured live: 2026-10-20 02:41:03 +07:00
+TASK TRACKER DE24 | services-status | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> docker compose ps -a --format json (formatted as a readable service table)
+
+Service           State   Health  Published
+-------           -----   ------  ---------
+cadvisor          running healthy
+db                running healthy
+grafana           running         127.0.0.1:3001->3000
+log-init          exited
+loki              running
+nginx             running healthy 127.0.0.1:8080->8080
+nginx-exporter    running
+pgadmin           running         127.0.0.1:5050->80
+postgres-exporter running
+prometheus        running         127.0.0.1:9090->9090
+promtail          running
+task-app          running healthy
+Verified: 12 services; log-init completed with exit 0; application services are running.
+COMPLETED: 2026-10-20 02:41:04 +07:00

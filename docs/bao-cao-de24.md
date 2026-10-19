@@ -50,11 +50,11 @@ Hệ thống tài liệu bao gồm chính xác 18 hình: 1 sơ đồ kiến trú
 | Chương 5 — Nginx Reverse Proxy và Bảo vệ HTTP | 20–22 |
 | Chương 6 — Giám sát hệ thống bằng Prometheus và Grafana | 23–26 |
 | Chương 7 — Thu thập và tập trung Log với Loki, Promtail và LogQL | 27–30 |
-| Chương 8 — Hardening, kiểm thử toàn diện và đánh giá an toàn | 31–37 |
-| Kết luận và hướng phát triển | 38 |
-| Tài liệu tham khảo | 39 |
-| Phụ lục A — Hướng dẫn cài đặt và vận hành trên Windows | 40–41 |
-| Phụ lục B — Checklist nghiệm thu và kịch bản demo | 42 |
+| Chương 8 — Hardening, kiểm thử toàn diện và đánh giá an toàn | 31–40 |
+| Kết luận và hướng phát triển | 41 |
+| Tài liệu tham khảo | 42 |
+| Phụ lục A — Hướng dẫn cài đặt và vận hành trên Windows | 43–44 |
+| Phụ lục B — Checklist nghiệm thu và kịch bản demo | 45 |
 
 <!-- PAGEBREAK -->
 
@@ -322,7 +322,7 @@ node scripts/verify_e2e.js
 3. **Ảnh minh chứng:**
 
 ![Hình 4.4. Kiểm thử E2E API qua Nginx](screenshots/api-e2e-terminal.png)
-*Hình 4.4. Ảnh trích xuất kết quả thực thi kiểm thử tự động End-to-End (E2E) các API CRUD qua Nginx trên terminal*
+*Hình 4.4. Ảnh chụp cửa sổ PowerShell ghi nhận kết quả thực thi kiểm thử tự động End-to-End (E2E) các API CRUD qua Nginx trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - `GET /health` trả về mã HTTP `200` kèm JSON xác nhận database đã kết nối (`{"status":"ok","database":"connected"}`).
@@ -336,25 +336,29 @@ node scripts/verify_e2e.js
 
 Dữ liệu đầu ra thô (raw terminal output) ghi nhận từ phiên thực thi (được lưu tại `docs/logs/verify_e2e.log`):
 ```text
+Captured live: 2026-10-20 02:41:05 +07:00
+TASK TRACKER DE24 | api-e2e-terminal | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> node scripts/verify_e2e.js
 === BẮT ĐẦU E2E VERIFICATION QUA NGINX ===
 Endpoint kiểm thử: http://127.0.0.1:8080
 1. Kiểm tra GET /health...
    Health status: {"status":"ok","database":"connected"}
-2. Tạo task kiểm thử: "VERIFY-m1mjis"...
-   Task tạo thành công: ID=17, title="VERIFY-m1mjis", priority="high"
-3. GET danh sách và lọc task với từ khóa "VERIFY-m1mjis"...
-   Tìm thấy 1 task khớp từ khóa "VERIFY-m1mjis"
-4. Cập nhật PATCH trạng thái task 17 thành "in_progress"...
+2. Tạo task kiểm thử: "VERIFY-hgoiz8"...
+   Task tạo thành công: ID=21, title="VERIFY-hgoiz8", priority="high"
+3. GET danh sách và lọc task với từ khóa "VERIFY-hgoiz8"...
+   Tìm thấy 1 task khớp từ khóa "VERIFY-hgoiz8"
+4. Cập nhật PATCH trạng thái task 21 thành "in_progress"...
    Task sau cập nhật: status="in_progress"
-5. Xóa DELETE task 17...
+5. Xóa DELETE task 21...
    Xóa thành công (HTTP 204 No Content)
-6. Xác minh PATCH task đã xóa (ID=17) trả về HTTP 404...
+6. Xác minh PATCH task đã xóa (ID=21) trả về HTTP 404...
    Kết quả PATCH task đã xóa: status=404
 7. Xác minh dữ liệu sai (tiêu đề rỗng, status sai) trả về HTTP 400...
    Kết quả dữ liệu sai: status=400
 8. Xác minh JSON cú pháp hỏng trả về HTTP 400...
    Kết quả JSON hỏng: status=400
 === TẤT CẢ CÁC BƯỚC E2E QUA NGINX ĐÃ ĐẠT PASS 100% ===
+COMPLETED: 2026-10-20 02:41:05 +07:00
 ```
 5. **Cách tái hiện:** Thực thi tệp `scripts/verify_e2e.js` bằng Node.js khi stack đang hoạt động.
 
@@ -565,7 +569,7 @@ node scripts/check_loki.js
 3. **Ảnh minh chứng:**
 
 ![Hình 7.2. Kiểm chứng 3 truy vấn LogQL trên terminal](screenshots/loki-logql-verification.png)
-*Hình 7.2. Ảnh trích xuất kết quả thực thi kiểm chứng 3 truy vấn LogQL thực tế trên terminal/API*
+*Hình 7.2. Ảnh chụp cửa sổ PowerShell ghi nhận kết quả thực thi kiểm chứng 3 truy vấn LogQL thực tế trên terminal/API*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - Truy vấn 1 (`{service="task-tracker"} | json`): Tìm thấy các streams log hoạt động, nạp thành công bản ghi log JSON từ `app.jsonl`.
@@ -577,6 +581,9 @@ node scripts/check_loki.js
 
 Dữ liệu đầu ra thô (raw terminal output) từ script kiểm chứng (được lưu tại `docs/logs/check_loki.log`):
 ```text
+Captured live: 2026-10-20 02:41:07 +07:00
+TASK TRACKER DE24 | loki-logql-verification | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> node scripts/check_loki.js
 === BẮT ĐẦU XÁC MINH TRUY VẤN LOGQL QUA LOKI ===
 Grafana URL: http://127.0.0.1:3001
 Loki Datasource UID: "loki" (URL nội bộ: http://loki:3100)
@@ -586,26 +593,27 @@ Loki Datasource UID: "loki" (URL nội bộ: http://loki:3100)
     Mục đích: Trích xuất toàn bộ trường JSON của ứng dụng Express
     Trạng thái: success | Streams: 10 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 1
-    Bản ghi mẫu: {"level":30,"time":1792436017087,"service":"task-tracker","environment":"production","requestId":"0e7407b8-8624-4153-a9f3-4a24c3426a68","method":"GET"...
+    Bản ghi mẫu: {"level":30,"time":1792438865381,"service":"task-tracker","environment":"production","requestId":"5f0c00b9-5aab-4e5c-ac0d-4659ee808cd5","method":"POST...
 
 --- [2/3] Truy vấn 2 (Lọc log thành công 2xx) ---
     LogQL: {service="task-tracker"} | json | statusCode >= 200 and statusCode < 300
     Mục đích: Sàng lọc các yêu cầu HTTP thành công (mã 200, 201, 204)
     Trạng thái: success | Streams: 10 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 1
-    Bản ghi mẫu: {"level":30,"time":1792436017087,"service":"task-tracker","environment":"production","requestId":"0e7407b8-8624-4153-a9f3-4a24c3426a68","method":"GET"...
+    Bản ghi mẫu: {"level":30,"time":1792438865303,"service":"task-tracker","environment":"production","requestId":"92a8ff22-5088-4f1e-8b74-7cdb96388bef","method":"GET"...
 
 --- [3/3] Truy vấn 3 (Access log Nginx cho API tasks) ---
     LogQL: {service="nginx", log_type="access"} |= "/api/tasks"
     Mục đích: Lọc nhật ký truy cập Nginx Reverse Proxy theo endpoint /api/tasks
     Trạng thái: success | Streams: 1 | Tổng log entries: 10
     Số bản ghi trong stream đầu tiên: 10
-    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:18:22:22 +0000] "DELETE /api/tasks/16 HTTP/1.1" 204 0 "-" "node"
+    Bản ghi mẫu: 172.25.0.1 - - [19/Oct/2026:19:41:05 +0000] "POST /api/tasks HTTP/1.1" 400 35 "-" "node"
 
 === XÁC NHẬN: 3/3 TRUY VẤN LOGQL HOẠT ĐỘNG CHÍNH XÁC VÀ TRẢ VỀ DỮ LIỆU THẬT ===
   ✓ Truy vấn 1 (Log JSON ứng dụng): 10 stream(s), 10 log entries.
   ✓ Truy vấn 2 (Lọc log thành công 2xx): 10 stream(s), 10 log entries.
   ✓ Truy vấn 3 (Access log Nginx cho API tasks): 1 stream(s), 10 log entries.
+COMPLETED: 2026-10-20 02:41:07 +07:00
 ```
 5. **Cách tái hiện:** Chạy script `node scripts/check_loki.js` trong PowerShell.
 
@@ -674,7 +682,7 @@ npm test
 3. **Ảnh minh chứng:**
 
 ![Hình 8.1. Kết quả kiểm thử tự động ứng dụng](screenshots/unit-api-tests.png)
-*Hình 8.1. Ảnh trích xuất kết quả thực thi bộ kiểm thử ứng dụng tự động (npm test, 12/12 test pass) trên terminal*
+*Hình 8.1. Ảnh chụp cửa sổ PowerShell ghi nhận kết quả thực thi bộ kiểm thử ứng dụng tự động (npm test, 12/12 test pass) trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 Toàn bộ 12 ca kiểm thử (bao gồm kiểm tra validation tiêu đề, độ dài, ngày tháng, trạng thái, mức ưu tiên, partial update, xử lý lỗi 404 và xử lý lỗi kết nối DB trả về 500 an toàn không lộ stack trace) đều đạt kết quả `pass 12`, không có ca kiểm thử nào thất bại (`fail 0`).
@@ -682,21 +690,59 @@ Lưu ý: Ca kiểm thử "Returns 500 without leaking database details or stack 
 
 Dữ liệu đầu ra thô (raw terminal output) trích xuất trực tiếp từ file nhật ký kiểm thử `docs/logs/unit_tests.log`:
 ```text
-> task-tracker-de24@1.0.0 test
-> node --test
+Captured live: 2026-10-20 02:41:08 +07:00
+TASK TRACKER DE24 | unit-api-tests | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> npm --prefix app test -- --test-reporter=spec
 
-✔ GET /health returns 200 and ok when database is healthy (41.6959ms)
-✔ GET /health returns 503 when database fails (8.4362ms)
-✔ GET /metrics returns 200 with Prometheus text metrics (8.5125ms)
-✔ Full CRUD flow: create, read, filter, search, update, delete (110.1947ms)
-✔ Input validation rejects invalid requests with 400 (150.6887ms)
-✔ Returns 404 when updating or deleting a nonexistent task (6.1224ms)
-✔ Returns 500 without leaking database details or stack trace on DB error (24.6405ms)
-✔ accepts a valid task and normalizes optional values (1.7221ms)
-✔ rejects a title that is blank or too long (0.159ms)
-✔ rejects unsupported status, priority, and malformed date (0.1284ms)
-✔ partial updates validate only submitted fields (0.1966ms)
-✔ accepts a task without dueDate and defaults dueDate to null (0.1172ms)
+> task-tracker-de24@1.0.0 test
+> node --test --test-reporter=spec
+
+{"level":30,"time":1792438869330,"service":"task-tracker","environment":"development","requestId":"1b37f439-e35f-4043-9eab-beb14c459683","method":"GET","path":"/health","statusCode":200,"durationMs":3,"msg":"http_request_completed"}
+✔ GET /health returns 200 and ok when database is healthy (40.2118ms)
+{"level":50,"time":1792438869344,"service":"task-tracker","environment":"development","err":{"type":"Error","message":"Simulated database connection failure","stack":"Error: Simulated database connection failure\n    at Object.query (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\test\\api.test.js:21:15)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\src\\server.js:90:22\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:157:13)\n    at Route.dispatch (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:117:3)\n    at handle (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:435:11)\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:295:15\n    at processParams (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:291:5)"},"msg":"health_check_failed"}
+{"level":30,"time":1792438869345,"service":"task-tracker","environment":"development","requestId":"cd3b79e5-78a2-4d35-9ae8-f26ed2f774de","method":"GET","path":"/health","statusCode":503,"durationMs":1,"msg":"http_request_completed"}
+✔ GET /health returns 503 when database fails (8.9699ms)
+{"level":30,"time":1792438869352,"service":"task-tracker","environment":"development","requestId":"65908cc9-803e-4d84-b50c-f6dec24dd2f3","method":"GET","path":"/metrics","statusCode":200,"durationMs":2,"msg":"http_request_completed"}
+✔ GET /metrics returns 200 with Prometheus text metrics (7.4193ms)
+{"level":30,"time":1792438869358,"service":"task-tracker","environment":"development","requestId":"17a832d9-29ff-4c47-9f2a-6453c76d26fe","method":"GET","path":"/api/tasks","statusCode":200,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869371,"service":"task-tracker","environment":"development","requestId":"b3c28b7c-f44d-451c-ae0e-13929807d34d","method":"POST","path":"/api/tasks","statusCode":201,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869383,"service":"task-tracker","environment":"development","requestId":"8891020d-c1cd-4755-ad58-b430f28bbdb7","method":"POST","path":"/api/tasks","statusCode":201,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869386,"service":"task-tracker","environment":"development","requestId":"e18754e0-1a38-449a-a49f-bb92834df607","method":"GET","path":"/api/tasks","statusCode":200,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869402,"service":"task-tracker","environment":"development","requestId":"fae7bc22-b8cc-4cc7-8c2e-4a3d85a26849","method":"GET","path":"/api/tasks","statusCode":200,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869418,"service":"task-tracker","environment":"development","requestId":"c912886c-c9bd-4b2d-9444-67164fe3bfc6","method":"GET","path":"/api/tasks","statusCode":200,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869435,"service":"task-tracker","environment":"development","requestId":"eee39ae3-5a08-4ffe-98c8-c8fbb27da76d","method":"PATCH","path":"/api/tasks/1","statusCode":200,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869450,"service":"task-tracker","environment":"development","requestId":"81270258-001a-4a35-bc90-4d5a898b5af7","method":"DELETE","path":"/api/tasks/1","statusCode":204,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869465,"service":"task-tracker","environment":"development","requestId":"70aa6eb5-c9b8-472b-83e6-d3e3648c32ed","method":"GET","path":"/api/tasks","statusCode":200,"durationMs":1,"msg":"http_request_completed"}
+✔ Full CRUD flow: create, read, filter, search, update, delete (113.1517ms)
+{"level":30,"time":1792438869473,"service":"task-tracker","environment":"development","requestId":"b36a66a9-e309-4b17-8b83-8968f9d967f4","method":"POST","path":"/api/tasks","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869475,"service":"task-tracker","environment":"development","requestId":"34beaaf1-01bf-432f-8b62-9b87d5b13816","method":"POST","path":"/api/tasks","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869481,"service":"task-tracker","environment":"development","requestId":"a5e2a528-5b85-4b38-98c2-488f3270f0b3","method":"POST","path":"/api/tasks","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869497,"service":"task-tracker","environment":"development","requestId":"caed8933-18c5-42b7-b167-bd68163827f5","method":"POST","path":"/api/tasks","statusCode":400,"durationMs":1,"msg":"http_request_completed"}
+{"level":30,"time":1792438869514,"service":"task-tracker","environment":"development","requestId":"9c9d8b78-3ea3-4719-a015-43b7d75c7fcb","method":"POST","path":"/api/tasks","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869529,"service":"task-tracker","environment":"development","requestId":"753798c0-5b41-416d-a6b5-1563b0f1b722","method":"POST","path":"/api/tasks","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869543,"service":"task-tracker","environment":"development","requestId":"8781cb88-d110-4465-9029-0f8097370801","method":"GET","path":"/api/tasks","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869559,"service":"task-tracker","environment":"development","requestId":"d00ba930-1b60-41f4-a955-bfb20da89aea","method":"PATCH","path":"/api/tasks/not-an-id","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869574,"service":"task-tracker","environment":"development","requestId":"ba82709c-74b6-49f5-aa33-22a4eef74467","method":"PATCH","path":"/api/tasks/1","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869589,"service":"task-tracker","environment":"development","requestId":"36fde5e7-28bb-4b65-97cc-d1846f429acb","method":"DELETE","path":"/api/tasks/abc","statusCode":400,"durationMs":0,"msg":"http_request_completed"}
+{"level":50,"time":1792438869606,"service":"task-tracker","environment":"development","err":{"type":"SyntaxError","message":"Expected property name or '}' in JSON at position 2 (line 1 column 3)","stack":"SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3)\n    at JSON.parse (<anonymous>)\n    at parse (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\body-parser\\lib\\types\\json.js:91:21)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\body-parser\\lib\\read.js:162:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:227:14)\n    at invokeCallback (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\raw-body\\index.js:238:16)\n    at done (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\raw-body\\index.js:227:7)\n    at IncomingMessage.onEnd (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\raw-body\\index.js:287:7)\n    at IncomingMessage.emit (node:events:514:28)\n    at endReadableNT (node:internal/streams/readable:1757:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","expose":true,"statusCode":400,"status":400,"body":"{ broken json"},"msg":"request_failed"}
+✔ Input validation rejects invalid requests with 400 (139.9659ms)
+{"level":30,"time":1792438869611,"service":"task-tracker","environment":"development","requestId":"28cb13ac-edcb-4f3e-aee2-c6cb50837eca","method":"PATCH","path":"/api/tasks/999","statusCode":404,"durationMs":0,"msg":"http_request_completed"}
+{"level":30,"time":1792438869614,"service":"task-tracker","environment":"development","requestId":"9216bd83-3c43-4068-a695-48e0944c4baa","method":"DELETE","path":"/api/tasks/999","statusCode":404,"durationMs":0,"msg":"http_request_completed"}
+✔ Returns 404 when updating or deleting a nonexistent task (7.702ms)
+{"level":50,"time":1792438869619,"service":"task-tracker","environment":"development","err":{"type":"Error","message":"Simulated database connection failure","stack":"Error: Simulated database connection failure\n    at Object.query (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\test\\api.test.js:21:15)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\src\\server.js:112:37\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:157:13)\n    at Route.dispatch (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:117:3)\n    at handle (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:435:11)\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:295:15\n    at processParams (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:291:5)"},"msg":"request_failed"}
+{"level":30,"time":1792438869619,"service":"task-tracker","environment":"development","requestId":"94c37c6e-3132-49ef-b54c-5d41532b29fb","method":"GET","path":"/api/tasks","statusCode":500,"durationMs":1,"msg":"http_request_completed"}
+{"level":50,"time":1792438869621,"service":"task-tracker","environment":"development","err":{"type":"Error","message":"Simulated database connection failure","stack":"Error: Simulated database connection failure\n    at Object.query (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\test\\api.test.js:21:15)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\src\\server.js:121:37\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:157:13)\n    at Route.dispatch (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:117:3)\n    at handle (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:435:11)\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:295:15\n    at processParams (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:291:5)"},"msg":"request_failed"}
+{"level":30,"time":1792438869622,"service":"task-tracker","environment":"development","requestId":"500f2f27-e83d-496b-aa59-335b8592c85e","method":"POST","path":"/api/tasks","statusCode":500,"durationMs":0,"msg":"http_request_completed"}
+{"level":50,"time":1792438869635,"service":"task-tracker","environment":"development","err":{"type":"Error","message":"Simulated database connection failure","stack":"Error: Simulated database connection failure\n    at Object.query (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\test\\api.test.js:21:15)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\src\\server.js:142:37\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:157:13)\n    at Route.dispatch (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:117:3)\n    at handle (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:435:11)\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:295:15\n    at param (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:600:14)\n    at param (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:610:14)"},"msg":"request_failed"}
+{"level":30,"time":1792438869636,"service":"task-tracker","environment":"development","requestId":"147ba3ad-293b-4adb-96e3-b0449cf9d5c1","method":"PATCH","path":"/api/tasks/1","statusCode":500,"durationMs":0,"msg":"http_request_completed"}
+{"level":50,"time":1792438869650,"service":"task-tracker","environment":"development","err":{"type":"Error","message":"Simulated database connection failure","stack":"Error: Simulated database connection failure\n    at Object.query (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\test\\api.test.js:21:15)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\src\\server.js:155:37\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at next (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:157:13)\n    at Route.dispatch (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\route.js:117:3)\n    at handle (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:435:11)\n    at Layer.handleRequest (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\lib\\layer.js:152:17)\n    at D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:295:15\n    at param (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:600:14)\n    at param (D:\\Projects\\DTC245200775-task-tracker-de24\\app\\node_modules\\router\\index.js:610:14)"},"msg":"request_failed"}
+{"level":30,"time":1792438869651,"service":"task-tracker","environment":"development","requestId":"49c72c06-c956-4596-a063-7b0310c094c6","method":"DELETE","path":"/api/tasks/1","statusCode":500,"durationMs":1,"msg":"http_request_completed"}
+✔ Returns 500 without leaking database details or stack trace on DB error (37.3245ms)
+✔ accepts a valid task and normalizes optional values (1.6687ms)
+✔ rejects a title that is blank or too long (0.1717ms)
+✔ rejects unsupported status, priority, and malformed date (0.1286ms)
+✔ partial updates validate only submitted fields (0.1987ms)
+✔ accepts a task without dueDate and defaults dueDate to null (0.1106ms)
 ℹ tests 12
 ℹ suites 0
 ℹ pass 12
@@ -704,7 +750,8 @@ Dữ liệu đầu ra thô (raw terminal output) trích xuất trực tiếp t�
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 593.3188
+ℹ duration_ms 614.8984
+COMPLETED: 2026-10-20 02:41:09 +07:00
 ```
 5. **Cách tái hiện:** Chuyển vào thư mục `app`, chạy lệnh `npm test` và đối chiếu với file nhật ký `docs/logs/unit_tests.log`.
 
@@ -720,7 +767,7 @@ docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.H
 3. **Ảnh minh chứng:**
 
 ![Hình 8.2. Xác minh cơ chế Hardening container](screenshots/hardening-verification.png)
-*Hình 8.2. Ảnh trích xuất kết quả xác minh thực nghiệm đặc quyền non-root (UID 10001, 101), ReadOnlyRootfs và drop capabilities trên terminal*
+*Hình 8.2. Ảnh chụp cửa sổ PowerShell ghi nhận kết quả xác minh thực nghiệm đặc quyền non-root (UID 10001, 101), ReadOnlyRootfs và drop capabilities trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - `task-app` chạy với `uid=10001 gid=10001`.
@@ -729,15 +776,17 @@ docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.H
 Khẳng định chính sách gia cố an ninh đã được áp dụng chuẩn xác trên các container tiếp nhận xử lý dữ liệu.
 
 Dữ liệu đầu ra thô (raw terminal output) trích xuất từ phiên kiểm tra (được lưu tại `docs/logs/hardening.log`):
-```powershell
-PS> docker compose exec task-app id
+```text
+Captured live: 2026-10-20 02:41:10 +07:00
+TASK TRACKER DE24 | hardening-verification | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> docker compose exec -T task-app id; docker compose exec -T nginx id; docker inspect (selected fields only)
+SERVICE: task-app
 uid=10001 gid=10001 groups=10001
-
-PS> docker compose exec nginx id
+User=10001:10001 | ReadOnly=true | CapDrop=["ALL"] | SecurityOpt=["no-new-privileges:true"]
+SERVICE: nginx
 uid=101(nginx) gid=101(nginx) groups=101(nginx)
-
-PS> docker inspect -f "ReadOnlyRootfs: {{.HostConfig.ReadonlyRootfs}}, CapDrop: {{.HostConfig.CapDrop}}, SecurityOpt: {{.HostConfig.SecurityOpt}}" task-tracker-de24-task-app-1
-ReadOnlyRootfs: true, CapDrop: [ALL], SecurityOpt: [no-new-privileges:true]
+User=101 | ReadOnly=true | CapDrop=["ALL"] | SecurityOpt=["no-new-privileges:true"]
+COMPLETED: 2026-10-20 02:41:11 +07:00
 ```
 5. **Cách tái hiện:** Thực thi các lệnh kiểm tra trên trong PowerShell khi container đang chạy.
 
@@ -753,7 +802,7 @@ docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports
 3. **Ảnh minh chứng:**
 
 ![Hình 8.3. Xác minh phân tách mạng và DB roles](screenshots/networks-db-roles.png)
-*Hình 8.3. Ảnh trích xuất kết quả kiểm tra phân tách mạng Docker (Internal=true), DB least privilege và cách ly port bindings trên terminal*
+*Hình 8.3. Ảnh chụp cửa sổ PowerShell ghi nhận kết quả kiểm tra phân tách mạng Docker (Internal=true), DB least privilege và cách ly port bindings trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 - Cả hai mạng `task-tracker-de24_data` và `task-tracker-de24_observability` đều có `Internal: true`.
@@ -761,27 +810,25 @@ docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports
 - Cổng `3000` (app) và `5432` (db) hoàn toàn không có port mapping ra host; các cổng quản trị đều chỉ bind loopback `127.0.0.1`.
 
 Dữ liệu đầu ra thô (raw terminal output) trích xuất từ phiên kiểm tra (được lưu tại `docs/logs/networks_roles.log`):
-```powershell
-PS> docker network inspect task-tracker-de24_data task-tracker-de24_observability -f '{{.Name}}: Internal={{.Internal}}'
-task-tracker-de24_data: Internal=true
-task-tracker-de24_observability: Internal=true
-
-PS> docker compose exec -T db psql -U postgres -d task_tracker -c "SELECT rolname, rolsuper, rolcanlogin FROM pg_roles WHERE rolname IN ('task_app', 'metrics_exporter', 'postgres');"
+```text
+Captured live: 2026-10-20 02:41:12 +07:00
+TASK TRACKER DE24 | networks-db-roles | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> docker network inspect; PostgreSQL role query; published-port inspection
+task-tracker-de24_data Internal=true
+task-tracker-de24_observability Internal=true
      rolname      | rolsuper | rolcanlogin
 ------------------+----------+-------------
- task_app         | f        | t
  metrics_exporter | f        | t
  postgres         | t        | t
+ task_app         | f        | t
 (3 rows)
 
-PS> docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports}}"
-NAMES                                PORTS
-task-tracker-de24-nginx-1            127.0.0.1:8080->8080/tcp
-task-tracker-de24-grafana-1          127.0.0.1:3001->3000/tcp
-task-tracker-de24-prometheus-1       127.0.0.1:9090->9090/tcp
-task-tracker-de24-pgadmin-1          127.0.0.1:5050->80/tcp
-task-tracker-de24-task-app-1         3000/tcp
-task-tracker-de24-db-1               5432/tcp
+grafana: 127.0.0.1:3001->3000
+nginx: 127.0.0.1:8080->8080
+pgadmin: 127.0.0.1:5050->80
+prometheus: 127.0.0.1:9090->9090
+Verified: app/database ports are not published; admin/web ports bind to 127.0.0.1.
+COMPLETED: 2026-10-20 02:41:13 +07:00
 ```
 5. **Cách tái hiện:** Thực thi các lệnh Docker inspect và PSQL query trong PowerShell.
 
@@ -796,31 +843,40 @@ task-tracker-de24-db-1               5432/tcp
 3. **Ảnh minh chứng:**
 
 ![Hình 8.4. Kiểm tra tính bền vững và lịch sử Git](screenshots/persistence-restart.png)
-*Hình 8.4. Ảnh trích xuất kết quả kiểm tra tính bền vững dữ liệu (Persistence) qua marker task và lịch sử commit Git trên terminal*
+*Hình 8.4. Ảnh chụp cửa sổ PowerShell ghi nhận kết quả kiểm tra tính bền vững dữ liệu (Persistence) qua marker task và lịch sử commit Git trên terminal*
 
 4. **Kết quả quan sát và ý nghĩa:**
 Sau khi `db` và `task-app` khởi động lại, dịch vụ nhanh chóng trở lại trạng thái healthy; truy vấn API tìm thấy chính xác marker task với đầy đủ tiêu đề và trạng thái. Volume Docker `postgres_data` đã bảo vệ dữ liệu độc lập hoàn toàn với vòng đời của container. Lịch sử commit Git thể hiện các bước phát triển tuần tự, rõ ràng và có cấu trúc.
 
 Dữ liệu đầu ra thô (raw terminal output) trích xuất từ phiên kiểm tra (được lưu tại `docs/logs/test_persistence.log`):
-```powershell
-PS> node scripts/test_persistence.js
+```text
+Captured live: 2026-10-20 02:41:14 +07:00
+TASK TRACKER DE24 | persistence-restart | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> node scripts/test_persistence.js
 === BƯỚC 1: TẠO MARKER TASK TRƯỚC KHI RESTART ===
-Đang tạo marker task: "PERSISTENCE-MARKER-1792436048294"...
-   Marker task đã tạo thành công: ID=18, title="PERSISTENCE-MARKER-1792436048294"
+Đang tạo marker task: "PERSISTENCE-MARKER-1792438874114"...
+   Marker task đã tạo thành công: ID=22, title="PERSISTENCE-MARKER-1792438874114"
    Đã lưu thông tin marker vào .persistence_marker.tmp.
 
 --- TỰ ĐỘNG KHỞI ĐỘNG LẠI CONTAINER db VÀ task-app ---
- Container task-tracker-de24-task-app-1 Restarting
  Container task-tracker-de24-db-1 Restarting
+ Container task-tracker-de24-task-app-1 Restarting
  Container task-tracker-de24-db-1 Started
  Container task-tracker-de24-task-app-1 Started
 === BƯỚC 2: XÁC MINH MARKER TASK VÀ DỌN DẸP SAU KHI RESTART ===
-Đang tìm kiếm marker task ID=18, title="PERSISTENCE-MARKER-1792436048294"...
+Đang tìm kiếm marker task ID=22, title="PERSISTENCE-MARKER-1792438874114"...
    Hệ thống đã phục hồi healthy sau 1 giây.
-   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=18, title="PERSISTENCE-MARKER-1792436048294", status="in_progress"!
-Đang dọn dẹp marker task 18...
+   [XÁC NHẬN BỀN VỮNG] Marker task tồn tại nguyên vẹn: ID=22, title="PERSISTENCE-MARKER-1792438874114", status="in_progress"!
+Đang dọn dẹp marker task 22...
    Dọn dẹp marker task thành công (HTTP 204).
 === KIỂM TRA PERSISTENCE HOÀN TẤT VÀ ĐẠT PASS 100% ===
+Git history at capture time:
+03c308b fix(qa): resolve 4 remaining review issues on check_loki, unit tests, db roles, and logs
+c4f1c3c docs: restore student cover info, track verification scripts, and refine security analysis
+f78a9ea docs: enhance report with step-by-step reproduction guide and real evidence screenshots
+9f01599 docs: fill student details in final report
+e45e706 docs: add pgAdmin evidence to final report
+COMPLETED: 2026-10-20 02:41:18 +07:00
 ```
 5. **Cách tái hiện:** Chạy kiểm thử tự động toàn trình bằng `node scripts/test_persistence.js` (hoặc chạy tuần tự từng bước bằng `node scripts/persistence_step1.js`, `docker compose restart db task-app`, và `node scripts/persistence_step2.js`).
 

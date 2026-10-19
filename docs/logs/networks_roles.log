@@ -1,26 +1,18 @@
-PS> docker network inspect task-tracker-de24_data task-tracker-de24_observability -f '{{.Name}}: Internal={{.Internal}}'
-task-tracker-de24_data: Internal=true
-task-tracker-de24_observability: Internal=true
-
-PS> docker compose exec -T db psql -U postgres -d task_tracker -c "SELECT rolname, rolsuper, rolcanlogin FROM pg_roles WHERE rolname IN ('task_app', 'metrics_exporter', 'postgres');"
-     rolname      | rolsuper | rolcanlogin 
+﻿Captured live: 2026-10-20 02:41:12 +07:00
+TASK TRACKER DE24 | networks-db-roles | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> docker network inspect; PostgreSQL role query; published-port inspection
+task-tracker-de24_data Internal=true
+task-tracker-de24_observability Internal=true
+     rolname      | rolsuper | rolcanlogin
 ------------------+----------+-------------
+ metrics_exporter | f        | t
  postgres         | t        | t
  task_app         | f        | t
- metrics_exporter | f        | t
 (3 rows)
 
-
-PS> docker ps --filter "name=task-tracker-de24" --format "table {{.Names}}\t{{.Ports}}"
-NAMES                                   PORTS
-task-tracker-de24-pgadmin-1             127.0.0.1:5050->80/tcp
-task-tracker-de24-task-app-1            3000/tcp
-task-tracker-de24-postgres-exporter-1   9187/tcp
-task-tracker-de24-db-1                  5432/tcp
-task-tracker-de24-grafana-1             127.0.0.1:3001->3000/tcp
-task-tracker-de24-prometheus-1          127.0.0.1:9090->9090/tcp
-task-tracker-de24-nginx-exporter-1      9113/tcp
-task-tracker-de24-nginx-1               127.0.0.1:8080->8080/tcp
-task-tracker-de24-promtail-1            
-task-tracker-de24-loki-1                3100/tcp
-task-tracker-de24-cadvisor-1            8080/tcp
+grafana: 127.0.0.1:3001->3000
+nginx: 127.0.0.1:8080->8080
+pgadmin: 127.0.0.1:5050->80
+prometheus: 127.0.0.1:9090->9090
+Verified: app/database ports are not published; admin/web ports bind to 127.0.0.1.
+COMPLETED: 2026-10-20 02:41:13 +07:00

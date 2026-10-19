@@ -1,0 +1,21 @@
+﻿Captured live: 2026-10-20 02:41:06 +07:00
+TASK TRACKER DE24 | security-headers | LIVE EXECUTION
+PS D:\Projects\DTC245200775-task-tracker-de24> curl.exe --noproxy * --max-time 15 --fail -sS -I http://127.0.0.1:8080/
+HTTP/1.1 200 OK
+Server: nginx
+Date: Mon, 19 Oct 2026 19:41:06 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 4060
+Connection: keep-alive
+X-Request-Id: e309c39f-05de-4e7f-9971-b76474b3d8a6
+Accept-Ranges: bytes
+Cache-Control: public, max-age=3600
+Last-Modified: Tue, 13 Oct 2026 19:13:24 GMT
+ETag: W/"fdc-1a136af0c20"
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+
+COMPLETED: 2026-10-20 02:41:06 +07:00
