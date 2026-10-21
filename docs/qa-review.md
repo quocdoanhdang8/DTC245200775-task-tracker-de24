@@ -30,9 +30,13 @@ Bản gốc được đối chiếu trực tiếp trên GitHub là `ae188b6c70f7
 
 Output runner nguyên bản được lưu tại [qa_unit_tests.log](logs/qa_unit_tests.log), [qa_harness.log](logs/qa_harness.log), [qa_node22.log](logs/qa_node22.log), [qa_browser.log](logs/qa_browser.log). Các fixture Loki/E2E/persistence không phải log của Docker thật. Những ảnh và log runtime Windows đã có được giữ làm minh chứng của đúng các phiên trước, không đổi ngày/ID hoặc nhận là minh chứng của bản source vừa sửa.
 
-## Xác minh runtime sau khi lấy bản mới trên Windows
+### Kết quả runtime Windows do người dùng cung cấp sau lần audit
 
-Môi trường audit không có Docker daemon nên không xác nhận lại image build, PostgreSQL, Nginx, Prometheus/Grafana/Loki đang chạy thật với bản source mới. Sau khi Windows working tree sạch, dùng:
+Người dùng báo Docker build và runtime đạt: 11 service vận hành cùng `log-init` `Exited (0)`; E2E 8/8 và task ID 28 đã dọn; Loki 3/3 query có dữ liệu; marker persistence ID 29 còn nguyên sau restart rồi được dọn; cả năm Prometheus jobs UP, `pg_up=1`, `nginx_up=1`; dashboard Grafana có dữ liệu ở năm panel. Đây là thông tin do người dùng cung cấp, không được chạy lại trong phiên cập nhật tài liệu này. Không có log/ảnh mới kèm yêu cầu, nên không tạo minh chứng runtime mới; ảnh unit test 12 ca trong báo cáo vẫn chỉ đại diện phiên cũ, còn code đã có 13 ca và đã được kiểm tra ở phiên trước.
+
+## Lệnh xác minh runtime khi cần chạy lại
+
+Lần audit Codex trước không có Docker daemon nên không tự xác nhận runtime. Kết quả Windows người dùng cung cấp ở trên được ghi riêng, không kèm log/ảnh mới trong repository. Khi cần tái lập sau thay đổi source, dùng:
 
 ```powershell
 git pull --ff-only origin main

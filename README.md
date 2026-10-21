@@ -144,6 +144,10 @@ Sau khi khởi động bằng Docker Compose, demo lần lượt các thành ph�
 | Hardening | Đối chiếu user non-root, filesystem read-only, capabilities, mạng internal, cổng loopback và quyền DB theo mục 6 |
 | GitHub và báo cáo | Đối chiếu ba commit triển khai ở mục 10; mở báo cáo có bìa sinh viên, kiến trúc và ảnh minh chứng ở mục 9 |
 
+#### Kết quả Windows do người dùng cung cấp
+
+Người dùng báo đã build và chạy stack trên Windows: 11 service vận hành, `log-init` kết thúc `Exited (0)`; E2E 8/8 với task ID 28 đã dọn; ba query Loki có dữ liệu; persistence giữ nguyên marker ID 29 qua restart rồi dọn. Năm Prometheus jobs (`containers`, `nginx`, `postgres`, `prometheus`, `task_tracker_app`) đều UP, `pg_up=1`, `nginx_up=1`; dashboard Grafana có dữ liệu ở cả năm panel. Đây là kết quả người dùng cung cấp, không phải lần chạy của phiên Codex này; log/ảnh hiện có trong repository vẫn là minh chứng của các phiên trước.
+
 ### Kiểm thử tự động bổ sung (tùy chọn)
 
 Các công cụ sau hỗ trợ kiểm tra lại kết quả; không bắt buộc để khởi chạy hệ thống hoặc demo. Cần Node.js 22+ trên host. Tất cả dịch vụ của hệ thống vẫn chạy bằng Docker Compose.
@@ -181,7 +185,7 @@ docker compose logs --tail=50 task-app db nginx
 
 ## 9. Báo cáo và minh chứng
 
-`docs/bao-cao-de24.docx` là bản báo cáo rút gọn đã điền thông tin sinh viên; bản được kiểm tra trong Word có **21 trang, 18 hình**. Nguồn là `docs/bao-cao-de24.md`, builder là `docs/build_report.py`. Số trang có thể đổi nếu thay font, ảnh hoặc nội dung.
+`docs/bao-cao-de24.docx` là bản báo cáo rút gọn đã điền thông tin sinh viên; bản được kiểm tra trong Word có **21 trang, 18 hình**. Đây chưa phải bản bàn giao 10 trang được yêu cầu. Hai tệp `Bao-cao-De24-Dang-Quoc-Doanh-10-trang.docx` và `.pdf` chưa có trong repository, Downloads hoặc Desktop đã đồng bộ qua OneDrive. Cần chép đúng hai tệp vào `docs/` để tiếp tục kiểm tra và tích hợp; báo cáo 21 trang hiện tại được giữ nguyên. Nguồn/builder hiện tại (`docs/bao-cao-de24.md`, `docs/build_report.py`) vẫn tạo báo cáo cũ, vì vậy không chạy builder để thay thế bản 10 trang. Có PDF render cục bộ tại `docs/rendered/bao-cao-de24.pdf`, nhưng thư mục này bị Git ignore và PDF đó chưa được kiểm tra là bản 10 trang; nó không thay cho PDF bàn giao. `.gitignore` cũng bỏ qua `docs/*.pdf`.
 
 | Hình | Minh chứng |
 |---|---|
