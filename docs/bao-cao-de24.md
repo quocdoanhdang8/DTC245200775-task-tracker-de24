@@ -1,32 +1,29 @@
-<!-- DE24_REPORT_SOURCE: ten-page-v1 -->
+<!-- DE24_REPORT_SOURCE: ten-page-v2 -->
 
 <!-- COVER -->
-TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN
+TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN VÀ TRUYỀN THÔNG
 
-VÀ TRUYỀN THÔNG THÁI NGUYÊN
+KHOA CÔNG NGHỆ THÔNG TIN
 
-NGÀNH KHOA HỌC MÁY TÍNH
+![Logo ICTU](ictu-logo.jpg)
 
-# BÁO CÁO HỌC PHẦN
+# BÁO CÁO
 
-## TRIỂN KHAI VÀ QUẢN TRỊ
+## MÔN: TRIỂN KHAI VÀ QUẢN TRỊ
 ## HỆ THỐNG PHẦN MỀM
 
-### ĐỀ 24
-### HỆ THỐNG QUẢN LÝ CÔNG VIỆC
+### ĐỀ 24 HỆ THỐNG QUẢN LÝ CÔNG VIỆC
 ### TASK TRACKER
 
-Sinh viên thực hiện: Đặng Quốc Doanh
+**GIẢNG VIÊN HƯỚNG DẪN: HOÀNG VĂN TÂM**
 
-Mã số sinh viên: DTC245200775
+Sinh viên thực hiện:	ĐẶNG QUỐC DOANH
 
-Lớp: KHMT K23A
+MSSV:	DTC245200775
 
-Giảng viên hướng dẫn: Hoàng Văn Tâm
+Lớp:	KHMT K23A
 
-Năm học: 2026
-
-**Thái Nguyên, tháng 10 năm 2026**
+**THÁI NGUYÊN, NĂM 2026**
 
 <!-- PAGEBREAK -->
 
@@ -227,7 +224,7 @@ DB chỉ nối `data` và không publish cổng; không mô tả là “cô lậ
 
 # 9  Kiểm thử tổng kết và vận hành
 
-Bộ Unit/API hiện tại có 13 ca dùng database giả lập; bộ test 13/13 và QA harness 20/20 đã đạt trong phiên kiểm tra code trước. Hình 17 là ảnh chụp của phiên cũ có 12 ca; giữ nguyên ảnh làm minh chứng lịch sử, không dùng nó để khẳng định kết quả 13 ca.
+Ảnh Hình 17 ghi kết quả phiên cũ: 12 ca Unit/API dùng database giả lập. Code hiện tại đạt 13/13 Unit/API và QA harness 20/20 trong phiên kiểm tra trước; E2E trang 5 là kiểm tra riêng với PostgreSQL thật.
 
 ![Kết quả 12 ca Unit/API ở phiên trước](screenshots/unit-api-tests.png)
 *Hình 17. Ảnh phiên cũ: 12 ca Unit/API; không phải ảnh kết quả 13 ca hiện tại*
@@ -237,7 +234,7 @@ Chạy `node scripts/test_persistence.js`: tạo marker, restart `db/task-app`, 
 ![Kiểm tra persistence qua restart](screenshots/persistence-restart.png)
 *Hình 18. Marker tồn tại sau restart và được dọn với HTTP 204*
 
-Kết quả runtime Windows mới nhất do người dùng cung cấp: 11 service vận hành, `log-init` exit 0; E2E 8/8 và task ID 28 đã dọn; Loki 3/3 query có dữ liệu; marker persistence ID 29 còn nguyên sau restart rồi được dọn. Cả năm Prometheus jobs UP, `pg_up=1`, `nginx_up=1`; Grafana có dữ liệu ở năm panel. Đây là thông tin người dùng báo cáo; ảnh 2–18 vẫn là minh chứng các phiên cũ.
+Runtime Windows do người dùng cung cấp: Compose 11 service, `log-init` exit 0; E2E 8/8; Loki 3/3; persistence marker ID 29 còn qua restart rồi được dọn; Prometheus 5/5 UP, `pg_up=1`, `nginx_up=1`; Grafana có dữ liệu ở 5 panel.
 
 ## Vận hành và trình tự demo
 

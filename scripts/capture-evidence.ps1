@@ -1,4 +1,7 @@
-﻿# Run this file in an interactive Windows PowerShell session, not an agent background terminal.
+# Legacy capture workflow is not compatible with the official report cover/builder. Stop before COM or file mutation.
+throw 'Capture stopped: this legacy workflow expects the old report layout and Word COM; no evidence was changed.'
+
+# Run this file in an interactive Windows PowerShell session, not an agent background terminal.
 [CmdletBinding()]
 param(
     [string]$RepoPath = 'D:\Projects\DTC245200775-task-tracker-de24',

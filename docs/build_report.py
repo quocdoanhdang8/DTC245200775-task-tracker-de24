@@ -17,8 +17,9 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "bao-cao-de24.md"
 OUTPUT = ROOT / "bao-cao-de24.docx"
-REPORT_MARKER = "<!-- DE24_REPORT_SOURCE: ten-page-v1 -->"
+REPORT_MARKER = "<!-- DE24_REPORT_SOURCE: ten-page-v2 -->"
 EXPECTED_PAGE_BREAKS = 9
+EXPECTED_COVER_LOGO = "ictu-logo.jpg"
 EXPECTED_IMAGES = [
     "architecture.png",
     "screenshots/compose-startup.png",
@@ -245,6 +246,17 @@ def configure_section(section) -> None:
     section.footer_distance = Inches(0.28)
     section.different_first_page_header_footer = True
 
+    # The black frame belongs only to page one; it must not leak into the body.
+    borders = OxmlElement("w:pgBorders")
+    borders.set(qn("w:offsetFrom"), "page")
+    borders.set(qn("w:display"), "firstPage")
+    for edge in ("top", "left", "bottom", "right"):
+        border = OxmlElement(f"w:{edge}")
+        for key, value in (("val", "single"), ("sz", "12"), ("space", "26"), ("color", "000000")):
+            border.set(qn(f"w:{key}"), value)
+        borders.append(border)
+    section._sectPr.append(borders)
+
     header = section.header.paragraphs[0]
     header.paragraph_format.space_after = Pt(0)
     header.paragraph_format.tab_stops.add_tab_stop(Inches(6.68), WD_TAB_ALIGNMENT.RIGHT)
@@ -272,6 +284,19 @@ def add_picture(doc, alt: str, relative_path: str, image_index: int) -> None:
     inline._inline.docPr.set("descr", alt)
 
 
+def add_cover_logo(doc, relative_path: str) -> None:
+    path = ROOT / relative_path
+    if not path.is_file():
+        raise FileNotFoundError(f"Missing tracked cover logo: {path}")
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_before = Pt(18)
+    paragraph.paragraph_format.space_after = Pt(8)
+    paragraph.paragraph_format.keep_with_next = True
+    inline = paragraph.add_run().add_picture(str(path), width=Inches(1.42))
+    inline._inline.docPr.set("descr", "Logo ICTU")
+
+
 def build() -> Path:
     text = SOURCE.read_text(encoding="utf-8-sig")
     if not text.startswith(REPORT_MARKER):
@@ -282,12 +307,12 @@ def build() -> Path:
     image_paths = [match.group(2) for match in image_matches if match]
     if page_breaks != EXPECTED_PAGE_BREAKS:
         raise ValueError(f"Expected {EXPECTED_PAGE_BREAKS} manual page breaks; found {page_breaks}.")
-    if image_paths != EXPECTED_IMAGES:
+    if image_paths != [EXPECTED_COVER_LOGO, *EXPECTED_IMAGES]:
         raise ValueError("Report source must reference the 18 approved, tracked figures once and in order.")
-    if "DTC245200775" not in text or "Đặng Quốc Doanh" not in text:
+    if "DTC245200775" not in text or "ĐẶNG QUỐC DOANH" not in text:
         raise ValueError("Report student identity is missing.")
-    if not (ROOT / "architecture.png").is_file():
-        raise FileNotFoundError("Tracked architecture image is missing.")
+    if not (ROOT / EXPECTED_COVER_LOGO).is_file():
+        raise FileNotFoundError("Tracked ICTU cover logo is missing.")
 
     doc = Document()
     configure_styles(doc)
@@ -295,7 +320,7 @@ def build() -> Path:
     doc.core_properties.title = "Báo cáo Đề 24 — Hệ thống quản lý công việc Task Tracker"
     doc.core_properties.subject = "Triển khai và Quản trị Hệ thống Phần mềm"
     doc.core_properties.author = "Đặng Quốc Doanh"
-    doc.core_properties.comments = "Đề 24; source Markdown và 18 hình minh chứng nằm trong repository."
+    doc.core_properties.comments = "Đề 24; source Markdown, logo bìa và 18 hình minh chứng nằm trong repository."
     doc.core_properties.category = "Báo cáo học phần"
 
     cover = False
@@ -351,8 +376,11 @@ def build() -> Path:
             continue
         image = re.fullmatch(r"!\[(.*?)\]\((.*?)\)", line)
         if image:
-            add_picture(doc, image.group(1), image.group(2), image_index)
-            image_index += 1
+            if cover and image.group(2) == EXPECTED_COVER_LOGO:
+                add_cover_logo(doc, image.group(2))
+            else:
+                add_picture(doc, image.group(1), image.group(2), image_index)
+                image_index += 1
             i += 1
             continue
         if line.startswith("*") and line.endswith("*") and line.startswith("*Hình "):
@@ -367,9 +395,11 @@ def build() -> Path:
             if cover:
                 p = doc.add_paragraph(style="Title")
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_before = Pt(34)
-                p.paragraph_format.space_after = Pt(8)
-                add_inline(p, content, size=19, base_bold=True)
+                p.paragraph_format.space_before = Pt(8)
+                p.paragraph_format.space_after = Pt(12)
+                add_inline(p, content, size=27, base_bold=True)
+                for run in p.runs:
+                    run.font.color.rgb = RGBColor.from_string("F02127")
             else:
                 p = doc.add_paragraph(style="Heading 1")
                 add_inline(p, content, size=14, base_bold=True)
@@ -380,8 +410,8 @@ def build() -> Path:
             if cover:
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_after = Pt(2)
-                add_inline(p, content, size=17, base_bold=True)
+                p.paragraph_format.space_after = Pt(6)
+                add_inline(p, content, size=15, base_bold=True)
             else:
                 p = doc.add_paragraph(style="Heading 2")
                 add_inline(p, content, size=12, base_bold=True)
@@ -390,8 +420,8 @@ def build() -> Path:
         if line.startswith("### "):
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER if cover else WD_ALIGN_PARAGRAPH.LEFT
-            p.paragraph_format.space_after = Pt(1 if cover else 3)
-            add_inline(p, line[4:].strip(), size=15 if cover else 11.5, base_bold=True)
+            p.paragraph_format.space_after = Pt(5 if cover else 3)
+            add_inline(p, line[4:].strip(), size=13 if cover else 11.5, base_bold=True)
             i += 1
             continue
 
@@ -399,9 +429,35 @@ def build() -> Path:
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER if cover else WD_ALIGN_PARAGRAPH.JUSTIFY
         p.paragraph_format.line_spacing = 1.0
         p.paragraph_format.space_after = Pt(0)
-        if cover and line.startswith("TRƯỜNG "):
-            p.paragraph_format.space_before = Pt(12)
-        add_inline(p, line, size=11.5)
+        if cover:
+            p.paragraph_format.keep_together = True
+            if line.startswith("TRƯỜNG "):
+                p.paragraph_format.space_before = Pt(8)
+                p.paragraph_format.space_after = Pt(10)
+                add_inline(p, line, size=11, base_bold=True)
+            elif line.startswith("KHOA "):
+                p.paragraph_format.space_after = Pt(0)
+                add_inline(p, line, size=11, base_bold=True)
+                for run in p.runs:
+                    run.underline = True
+            elif line.startswith("GIẢNG VIÊN"):
+                p.paragraph_format.space_before = Pt(10)
+                p.paragraph_format.space_after = Pt(12)
+                add_inline(p, line, size=12, base_bold=True)
+            elif line.startswith(("Sinh viên thực hiện:", "MSSV:", "Lớp:")):
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                p.paragraph_format.left_indent = Inches(1.25)
+                p.paragraph_format.space_after = Pt(9)
+                p.paragraph_format.tab_stops.add_tab_stop(Inches(1.8))
+                add_inline(p, line.replace("\\t", "\t"), size=12, base_bold=True)
+            elif line.startswith("THÁI NGUYÊN"):
+                p.paragraph_format.space_before = Pt(138)
+                add_inline(p, line, size=11, base_bold=True)
+            else:
+                p.paragraph_format.space_after = Pt(0)
+                add_inline(p, line, size=11.5, base_bold=True)
+        else:
+            add_inline(p, line, size=11.5)
         i += 1
 
     if in_code:
@@ -410,26 +466,28 @@ def build() -> Path:
         raise ValueError(f"Builder consumed {image_index} figures and {table_index} tables unexpectedly.")
     doc.save(OUTPUT)
     validate_output(OUTPUT)
-    print(f"Wrote {OUTPUT} with 18 tracked images and 9 explicit page breaks (10 planned pages).")
+    print(f"Wrote {OUTPUT} with 18 content images, one cover logo, and 9 page breaks (10 planned pages).")
     return OUTPUT
 
 
 def validate_output(path: Path) -> None:
     built = Document(path)
-    if len(built.inline_shapes) != 18:
-        raise ValueError(f"Built DOCX contains {len(built.inline_shapes)} images; expected 18.")
+    if len(built.inline_shapes) != 19:
+        raise ValueError(f"Built DOCX contains {len(built.inline_shapes)} images; expected 18 content figures plus the cover logo.")
     runs = [r for p in built.paragraphs for r in p.runs if r.text.strip()]
     runs.extend(r for t in built.tables for row in t.rows for c in row.cells for p in c.paragraphs for r in p.runs if r.text.strip())
     wrong_fonts = [r.text for r in runs if r.font.name != FONT]
     if wrong_fonts:
         raise ValueError(f"Found editable text not explicitly set in {FONT}: {wrong_fonts[:3]}")
     content = "\n".join(p.text for p in built.paragraphs)
-    if "Đặng Quốc Doanh" not in content:
+    if "ĐẶNG QUỐC DOANH" not in content:
         raise ValueError("Built DOCX is missing the student identity.")
-    if "12 ca Unit/API" not in content or "13 ca" not in content:
+    if "12 ca Unit/API" not in content or "13/13 Unit/API" not in content or "QA harness 20/20" not in content:
         raise ValueError("Current 13-test count and historical 12-test image note must both be present.")
-    if "Kết quả runtime Windows mới nhất do người dùng cung cấp" not in content:
+    if "Runtime Windows do người dùng cung cấp" not in content:
         raise ValueError("User-provided current Windows runtime results are missing from the report.")
+    if not any(shape.width.inches <= 1.6 for shape in built.inline_shapes):
+        raise ValueError("The ICTU cover logo is missing or unexpectedly large.")
 
 
 if __name__ == "__main__":

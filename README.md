@@ -185,7 +185,7 @@ docker compose logs --tail=50 task-app db nginx
 
 ## 9. Báo cáo và minh chứng
 
-`docs/bao-cao-de24.docx` và `docs/bao-cao-de24.pdf` là bộ báo cáo chính thức, mỗi bản 10 trang và có 18 hình. PDF đã được kiểm tra trực quan đủ 10 trang; DOCX được dựng lại từ Markdown bằng builder trong repository. Chỉ bộ báo cáo này được giữ trong Git; PDF khác vẫn bị ignore.
+Báo cáo đang được rà soát tại [Word](docs/bao-cao-de24.docx) và [PDF](docs/bao-cao-de24.pdf). PDF có đúng 10 trang và đã được xem từng trang; gồm 18 hình nội dung và logo ICTU trên bìa. Hai đoạn trang 10 được cập nhật bằng Times New Roman để phân biệt ảnh 12 ca cũ, code 13/13 và kết quả runtime Windows do người dùng cung cấp. Word COM không khởi tạo được trong môi trường này, nên chưa xác nhận phân trang Word hoặc đồng bộ cuối giữa hai tệp. Chưa bàn giao/commit bộ này cho tới khi xác nhận được phân trang Word.
 
 | Hình | Minh chứng |
 |---|---|
@@ -206,7 +206,7 @@ python -m pip install python-docx Pillow
 python docs/build_report.py
 ```
 
-Builder tạo `docs/bao-cao-de24.docx` từ Markdown `docs/bao-cao-de24.md`; các hình lấy từ assets đã theo dõi trong `docs/`. Nguồn giữ 9 ngắt trang chủ động, 18 hình và Times New Roman. PDF chính thức `docs/bao-cao-de24.pdf` được lưu trong Git. Hình 17 là ảnh kiểm thử 12 ca của phiên cũ; phần kết quả văn bản phân biệt ảnh này với 13 ca Unit/API hiện tại. Kết quả Windows mới nhất do người dùng cung cấp được ghi riêng và không gán cho ảnh cũ.
+Builder tạo `docs/bao-cao-de24.docx` từ Markdown `docs/bao-cao-de24.md`; logo dùng `docs/ictu-logo.jpg`, 18 hình nội dung lấy từ assets đã theo dõi. Nguồn giữ 9 ngắt trang chủ động và Times New Roman. Hình 17 là ảnh kiểm thử 12 ca phiên cũ; phần chữ ghi riêng kết quả 13/13 và QA harness 20/20 từ phiên kiểm tra code trước. Kết quả Windows mới do người dùng cung cấp được ghi riêng, không quy cho phiên Codex hiện tại.
 
 `scripts/capture-evidence.ps1` là công cụ tùy chọn để **chụp lại**, cần desktop Windows mở khóa và Word COM. Nó ghi đè chín ảnh terminal sau khi chụp thành công, không dựng ảnh giả. Nếu muốn giữ ảnh chụp tay hiện tại, không chạy công cụ chụp lại. Không cần dùng script này để khởi động ứng dụng.
 

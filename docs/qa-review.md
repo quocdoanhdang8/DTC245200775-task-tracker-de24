@@ -1,6 +1,6 @@
 # Rà soát repository Task Tracker Đề 24
 
-Bản gốc được đối chiếu trực tiếp trên GitHub là `ae188b6c70f7e0ef5debe860e239d73a86e05325`. Lịch sử có đủ ba commit triển khai `8d265c0`, `4c5451a`, `fc35b1e` và các commit hoàn thiện sau đó. Báo cáo Word 21 trang cùng 18 hình đã nộp vào repository được giữ nguyên trong lần rà soát này.
+Bản gốc được đối chiếu trực tiếp trên GitHub là `ae188b6c70f7e0ef5debe860e239d73a86e05325`. Lịch sử có đủ ba commit triển khai `8d265c0`, `4c5451a`, `fc35b1e` và các commit hoàn thiện sau đó. Bộ báo cáo mới dùng bìa khung đen có logo ICTU; 18 hình nội dung giữ nguyên và logo được lưu riêng trong repository.
 
 ## Vấn đề đã sửa
 
@@ -15,6 +15,8 @@ Bản gốc được đối chiếu trực tiếp trên GitHub là `ae188b6c70f7
 
 ## Kết quả xác minh
 
+Báo cáo đang rà soát: [Word](bao-cao-de24.docx), [PDF](bao-cao-de24.pdf), [nguồn Markdown](bao-cao-de24.md), [builder](build_report.py), [logo ICTU](ictu-logo.jpg). PDF nền người dùng gửi có đúng 10 trang; tôi đã cập nhật hai đoạn kết quả trên trang 10 bằng Times New Roman để tách rõ ảnh 12 ca cũ, kết quả code 13/13 và runtime Windows do người dùng cung cấp. Việc đó giữ PDF ở 10 trang nhưng không phải xuất lại bằng Word. DOCX builder chưa được phân trang thực tế bằng Word vì Word COM treo khi khởi tạo; vì vậy chưa thể xác nhận bộ Word/PDF đồng bộ hoặc sẵn sàng commit/push.
+
 | Kiểm tra | Kết quả và phạm vi |
 |---|---|
 | Bộ Unit/API gốc | 12/12 pass trên Node 24; database giả lập |
@@ -26,13 +28,15 @@ Bản gốc được đối chiếu trực tiếp trên GitHub là `ae188b6c70f7
 | Cấu hình | YAML/JSON hợp lệ; 12 services, 6 volumes, 4 mạng chức năng; targets tham chiếu đúng service; app/DB không publish cổng host |
 | Cú pháp | JavaScript, shell init, PowerShell capture và Python helper hợp lệ |
 | Secrets | `.env` được ignore và chưa từng xuất hiện trong lịch sử file được kiểm tra; không thấy mẫu GitHub token, AWS access key hoặc private key trong các file text được quét |
-| Báo cáo | 18 ảnh nhúng, đủ tham chiếu ảnh; Word, Markdown báo cáo và screenshots không bị thay đổi bởi lần sửa source này |
+| Báo cáo nhận mới | DOCX hợp lệ có 18 ảnh nội dung và logo bìa; PDF hợp lệ đúng 10 trang, đã xem đủ 10 trang. Tài sản 18 ảnh khớp byte với ảnh đã theo dõi; font PDF nhúng Times New Roman. |
+| PDF cập nhật trang 10 | Dùng PDF người dùng gửi làm nền, cập nhật nội dung kiểm thử/provenance bằng PyMuPDF và font Times New Roman. Vẫn 10 trang và 19 ảnh hiển thị; không xuất lại bằng Word. |
+| DOCX do builder dựng | Cú pháp builder đạt; DOCX dựng có 18 ảnh nội dung, logo, bốn bảng, toàn bộ run văn bản Times New Roman và 9 ngắt trang. Word COM treo khi khởi tạo nên chưa đo phân trang thực tế hoặc xuất PDF từ bản dựng; chưa xác nhận bộ Word/PDF cuối đồng bộ. |
 
 Output runner nguyên bản được lưu tại [qa_unit_tests.log](logs/qa_unit_tests.log), [qa_harness.log](logs/qa_harness.log), [qa_node22.log](logs/qa_node22.log), [qa_browser.log](logs/qa_browser.log). Các fixture Loki/E2E/persistence không phải log của Docker thật. Những ảnh và log runtime Windows đã có được giữ làm minh chứng của đúng các phiên trước, không đổi ngày/ID hoặc nhận là minh chứng của bản source vừa sửa.
 
 ### Kết quả runtime Windows do người dùng cung cấp sau lần audit
 
-Người dùng báo Docker build và runtime đạt: 11 service vận hành cùng `log-init` `Exited (0)`; E2E 8/8 và task ID 28 đã dọn; Loki 3/3 query có dữ liệu; marker persistence ID 29 còn nguyên sau restart rồi được dọn; cả năm Prometheus jobs UP, `pg_up=1`, `nginx_up=1`; dashboard Grafana có dữ liệu ở năm panel. Đây là thông tin do người dùng cung cấp, không được chạy lại trong phiên cập nhật tài liệu này. Không có log/ảnh mới kèm yêu cầu, nên không tạo minh chứng runtime mới; ảnh unit test 12 ca trong báo cáo vẫn chỉ đại diện phiên cũ, còn code đã có 13 ca và đã được kiểm tra ở phiên trước.
+Người dùng báo Docker build và runtime đạt: 11 service vận hành cùng `log-init` `Exited (0)`; E2E 8/8 và task ID 28 đã dọn; Loki 3/3 query có dữ liệu; marker persistence ID 29 còn nguyên sau restart rồi được dọn; cả năm Prometheus jobs UP, `pg_up=1`, `nginx_up=1`; dashboard Grafana có dữ liệu ở năm panel. Đây là thông tin do người dùng cung cấp, không được chạy lại trong phiên cập nhật tài liệu này. Không có log/ảnh mới kèm yêu cầu, nên không tạo minh chứng runtime mới. Hình 17 ghi lại phiên cũ có 12 ca; code mới đã đạt 13 ca Unit/API trong phiên kiểm tra trước. Hai kết quả được giữ riêng, không sửa ảnh hoặc gán kết quả mới cho ảnh cũ.
 
 ## Lệnh xác minh runtime khi cần chạy lại
 
