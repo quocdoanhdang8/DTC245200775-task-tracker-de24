@@ -156,7 +156,7 @@ node scripts/check_loki.js
 node scripts/test_persistence.js
 ```
 
-Unit/API có 12 ca dùng database giả lập. E2E kiểm tra tám bước qua Nginx và dọn task thử; Loki yêu cầu ba truy vấn có log thật. Persistence **tự restart `db` và `task-app`** để kiểm tra task còn nguyên vẹn rồi dọn task; nếu marker phiên trước còn dở, chạy `node scripts/persistence_step2.js` để xác minh/dọn trước khi thử lại.
+Unit/API có 13 ca dùng database giả lập. E2E kiểm tra tám bước qua Nginx và dọn task thử; Loki yêu cầu ba truy vấn có log thật. Persistence **tự restart `db` và `task-app`** để kiểm tra task còn nguyên vẹn rồi dọn task; nếu marker phiên trước còn dở, chạy `node scripts/persistence_step2.js` để xác minh/dọn trước khi thử lại.
 
 Chi tiết harness hồi quy, Chromium và cách xử lý các tình huống kiểm thử nằm trong [tài liệu kiểm thử bổ sung](docs/qa-review.md#hướng-dẫn-kiểm-thử-bổ-sung-tùy-chọn). Kết quả dùng database/HTTP giả lập không thay thế demo và kiểm chứng các dịch vụ thật nêu trên.
 

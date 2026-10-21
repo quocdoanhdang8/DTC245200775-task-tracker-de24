@@ -99,6 +99,16 @@ function createApp({ database = pool, log = logger, metrics = registry } = {}) {
   });
   // Record rejected JSON/body-size requests in metrics and centralized logs too.
   app.use(express.json({ limit: "32kb" }));
+  app.use("/api/tasks", (req, res, next) => {
+    const hasBody = (req.headers["content-length"] && Number(req.headers["content-length"]) > 0)
+      || Boolean(req.headers["transfer-encoding"]);
+    if (["POST", "PATCH"].includes(req.method) && hasBody) {
+      if (!req.is("application/json")) {
+        return res.status(415).json({ error: "Content-Type must be application/json." });
+      }
+    }
+    next();
+  });
 
   app.get("/health", async (_req, res) => {
     try {

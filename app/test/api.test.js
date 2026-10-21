@@ -329,6 +329,18 @@ test("Input validation rejects invalid requests with 400", async () => {
   });
 });
 
+test("write requests with a body and unsupported media type return 415", async () => {
+  await withServer(async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: "title=Unsupported"
+    });
+    assert.equal(res.status, 415);
+    assert.deepEqual(await res.json(), { error: "Content-Type must be application/json." });
+  });
+});
+
 // 4. Task Not Found (404)
 test("Returns 404 when updating or deleting a nonexistent task", async () => {
   await withServer(async ({ baseUrl }) => {
