@@ -185,18 +185,17 @@ docker compose logs --tail=50 task-app db nginx
 
 ## 9. Báo cáo và minh chứng
 
-`docs/bao-cao-de24.docx` là bản báo cáo rút gọn đã điền thông tin sinh viên; bản được kiểm tra trong Word có **21 trang, 18 hình**. Đây chưa phải bản bàn giao 10 trang được yêu cầu. Hai tệp `Bao-cao-De24-Dang-Quoc-Doanh-10-trang.docx` và `.pdf` chưa có trong repository, Downloads hoặc Desktop đã đồng bộ qua OneDrive. Cần chép đúng hai tệp vào `docs/` để tiếp tục kiểm tra và tích hợp; báo cáo 21 trang hiện tại được giữ nguyên. Nguồn/builder hiện tại (`docs/bao-cao-de24.md`, `docs/build_report.py`) vẫn tạo báo cáo cũ, vì vậy không chạy builder để thay thế bản 10 trang. Có PDF render cục bộ tại `docs/rendered/bao-cao-de24.pdf`, nhưng thư mục này bị Git ignore và PDF đó chưa được kiểm tra là bản 10 trang; nó không thay cho PDF bàn giao. `.gitignore` cũng bỏ qua `docs/*.pdf`.
+`docs/bao-cao-de24.docx` và `docs/bao-cao-de24.pdf` là bộ báo cáo chính thức, mỗi bản 10 trang và có 18 hình. PDF đã được kiểm tra trực quan đủ 10 trang; DOCX được dựng lại từ Markdown bằng builder trong repository. Chỉ bộ báo cáo này được giữ trong Git; PDF khác vẫn bị ignore.
 
 | Hình | Minh chứng |
 |---|---|
-| 1.1–1.2 | Khởi chạy Compose và trạng thái service |
-| 3.1 | Sơ đồ kiến trúc, không phải ảnh runtime |
-| 4.1–4.3 | Website, tạo task, lọc trạng thái |
-| 4.4–4.5 | E2E và pgAdmin bảng tasks |
-| 5.1 | Security headers |
-| 6.1–6.3 | Prometheus targets, truy vấn metric, Grafana dashboard |
-| 7.1–7.2 | Grafana Explore và ba query LogQL qua API |
-| 8.1–8.4 | Unit/API tests, hardening, mạng/role/ports, persistence |
+| 1 | Sơ đồ kiến trúc |
+| 2–3 | Khởi chạy Compose và trạng thái service |
+| 4–6 | Website, task, pgAdmin, E2E và security headers |
+| 7 | Prometheus targets, metric và Grafana dashboard |
+| 8 | Grafana Explore và ba query LogQL |
+| 9 | Hardening, mạng, role và cổng |
+| 10 | Unit/API tests và persistence |
 
 Chín ảnh PowerShell đã được thay bằng ảnh người dùng chụp trực tiếp; tám ảnh trình duyệt và sơ đồ được giữ lại. `docs/logs/` chứa nhật ký các phiên xác minh đã lưu; ID và thời gian có thể khác giữa các phiên. Không đổi ảnh/log thành bằng chứng của một lần chạy khác.
 
@@ -207,7 +206,7 @@ python -m pip install python-docx Pillow
 python docs/build_report.py
 ```
 
-Sau khi dựng lại, kiểm tra số trang mục lục và vị trí hình trong Word. PDF xuất trên máy nằm tại `docs/rendered/bao-cao-de24.pdf`; thư mục này được Git ignore nên clone mới không có sẵn PDF. Có thể xuất PDF từ Word.
+Builder tạo `docs/bao-cao-de24.docx` từ Markdown `docs/bao-cao-de24.md`; các hình lấy từ assets đã theo dõi trong `docs/`. Nguồn giữ 9 ngắt trang chủ động, 18 hình và Times New Roman. PDF chính thức `docs/bao-cao-de24.pdf` được lưu trong Git. Hình 17 là ảnh kiểm thử 12 ca của phiên cũ; phần kết quả văn bản phân biệt ảnh này với 13 ca Unit/API hiện tại. Kết quả Windows mới nhất do người dùng cung cấp được ghi riêng và không gán cho ảnh cũ.
 
 `scripts/capture-evidence.ps1` là công cụ tùy chọn để **chụp lại**, cần desktop Windows mở khóa và Word COM. Nó ghi đè chín ảnh terminal sau khi chụp thành công, không dựng ảnh giả. Nếu muốn giữ ảnh chụp tay hiện tại, không chạy công cụ chụp lại. Không cần dùng script này để khởi động ứng dụng.
 

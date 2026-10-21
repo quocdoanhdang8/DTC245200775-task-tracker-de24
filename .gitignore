@@ -31,3 +31,4 @@ Thumbs.db
 # Generated report QA files
 docs/rendered/
 docs/*.pdf
+!docs/bao-cao-de24.pdf

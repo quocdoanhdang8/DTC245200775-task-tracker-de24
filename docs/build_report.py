@@ -1,193 +1,223 @@
 #!/usr/bin/env python3
-"""Build the editable Vietnamese course report as a formatted DOCX."""
+"""Build the 10-page editable assignment 24 report from its Markdown source."""
+from __future__ import annotations
+
 from pathlib import Path
 import re
 
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
-from PIL import Image, ImageDraw, ImageFont
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "bao-cao-de24.md"
 OUTPUT = ROOT / "bao-cao-de24.docx"
-ARCHITECTURE = ROOT / "architecture.png"
+REPORT_MARKER = "<!-- DE24_REPORT_SOURCE: ten-page-v1 -->"
+EXPECTED_PAGE_BREAKS = 9
+EXPECTED_IMAGES = [
+    "architecture.png",
+    "screenshots/compose-startup.png",
+    "screenshots/services-status.png",
+    "screenshots/task-tracker-ui.png",
+    "screenshots/task-create.png",
+    "screenshots/task-filter.png",
+    "screenshots/pgadmin-tasks.png",
+    "screenshots/api-e2e-terminal.png",
+    "screenshots/security-headers.png",
+    "screenshots/prometheus-targets.png",
+    "screenshots/prometheus-metric-query.png",
+    "screenshots/grafana-dashboard.png",
+    "screenshots/grafana-explore.png",
+    "screenshots/loki-logql-verification.png",
+    "screenshots/hardening-verification.png",
+    "screenshots/networks-db-roles.png",
+    "screenshots/unit-api-tests.png",
+    "screenshots/persistence-restart.png",
+]
+IMAGE_WIDTHS = [4.36, 5.18, 4.98, 4.07, 4.34, 4.20, 5.79, 5.48, 6.26,
+                2.94, 3.21, 3.38, 3.97, 4.83, 4.99, 4.96, 4.74, 4.32]
+TABLE_WIDTHS = [(2.24, 4.45), (1.18, 5.51), (2.76, 3.94), (2.17, 4.53)]
+FONT = "Times New Roman"
 
 
-def make_architecture():
-    """Draw a report-ready architecture figure from the configured services."""
-    scale = 2
-    width, height = 1600, 1040
-    image = Image.new("RGB", (width * scale, height * scale), "#f8faf8")
-    draw = ImageDraw.Draw(image)
-    font_root = Path("/usr/share/fonts/truetype/dejavu")
-    win_fonts = Path("C:/Windows/Fonts")
-    if (font_root / "DejaVuSans.ttf").exists():
-        regular_path = str(font_root / "DejaVuSans.ttf")
-        bold_path = str(font_root / "DejaVuSans-Bold.ttf")
-    elif (win_fonts / "arial.ttf").exists():
-        regular_path = str(win_fonts / "arial.ttf")
-        bold_path = str(win_fonts / "arialbd.ttf")
-    else:
-        regular_path = "arial"
-        bold_path = "arial"
-    try:
-        regular = ImageFont.truetype(regular_path, 20 * scale)
-        small = ImageFont.truetype(regular_path, 16 * scale)
-        title_font = ImageFont.truetype(bold_path, 29 * scale)
-        node_title = ImageFont.truetype(bold_path, 19 * scale)
-    except Exception:
-        regular = small = title_font = node_title = ImageFont.load_default()
+def set_run_font(run, *, size: float | None = None, bold: bool | None = None,
+                 italic: bool | None = None, color: str = "000000") -> None:
+    run.font.name = FONT
+    run._element.get_or_add_rPr().rFonts.set(qn("w:ascii"), FONT)
+    run._element.get_or_add_rPr().rFonts.set(qn("w:hAnsi"), FONT)
+    run._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), FONT)
+    run.font.color.rgb = RGBColor.from_string(color)
+    if size is not None:
+        run.font.size = Pt(size)
+    if bold is not None:
+        run.bold = bold
+    if italic is not None:
+        run.italic = italic
 
-    def box(x, y, w, h, title, subtitle, fill, stroke="#d7e2da"):
-        x, y, w, h = [v * scale for v in (x, y, w, h)]
-        draw.rounded_rectangle((x, y, x + w, y + h), radius=18 * scale, fill=fill, outline=stroke, width=2 * scale)
-        draw.text((x + 20 * scale, y + 16 * scale), title, font=node_title, fill="#173528")
-        draw.text((x + 20 * scale, y + 49 * scale), subtitle, font=small, fill="#52675a")
 
-    def arrow(start, end, label=None, color="#426b52", dashed=False):
-        sx, sy = start[0] * scale, start[1] * scale
-        ex, ey = end[0] * scale, end[1] * scale
-        dx, dy = ex - sx, ey - sy
-        length = max((dx * dx + dy * dy) ** 0.5, 1)
-        ux, uy = dx / length, dy / length
-        stop = 13 * scale
-        ex2, ey2 = ex - ux * stop, ey - uy * stop
-        if dashed:
-            parts = 20
-            for i in range(0, parts, 2):
-                a, b = i / parts, min((i + 1) / parts, 1)
-                draw.line((sx + dx * a, sy + dy * a, sx + dx * b, sy + dy * b), fill=color, width=3 * scale)
+def add_hyperlink(paragraph, label: str, target: str) -> None:
+    relationship = paragraph.part.relate_to(target, RT.HYPERLINK, is_external=True)
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), relationship)
+    run = OxmlElement("w:r")
+    props = OxmlElement("w:rPr")
+    fonts = OxmlElement("w:rFonts")
+    for family in ("ascii", "hAnsi", "eastAsia"):
+        fonts.set(qn(f"w:{family}"), FONT)
+    props.append(fonts)
+    color = OxmlElement("w:color")
+    color.set(qn("w:val"), "000000")
+    props.append(color)
+    run.append(props)
+    text = OxmlElement("w:t")
+    text.text = label
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+
+
+def add_inline(paragraph, text: str, *, size: float | None = None,
+               base_bold: bool | None = None, base_italic: bool | None = None) -> None:
+    """Render bold, italic, code and links without changing the report typeface."""
+    token = re.compile(r"(\*\*.*?\*\*|`[^`]+`|(?<!\*)\*[^*]+\*(?!\*)|\[[^\]]+\]\(https?://[^)]+\))")
+    pos = 0
+    for match in token.finditer(text):
+        if match.start() > pos:
+            run = paragraph.add_run(text[pos:match.start()])
+            set_run_font(run, size=size, bold=base_bold, italic=base_italic)
+        item = match.group(0)
+        if item.startswith("**"):
+            run = paragraph.add_run(item[2:-2])
+            set_run_font(run, size=size, bold=True, italic=base_italic)
+        elif item.startswith("`"):
+            run = paragraph.add_run(item[1:-1])
+            set_run_font(run, size=size, bold=base_bold, italic=base_italic)
+        elif item.startswith("["):
+            label, target = re.fullmatch(r"\[([^\]]+)\]\((https?://[^)]+)\)", item).groups()
+            add_hyperlink(paragraph, label, target)
         else:
-            draw.line((sx, sy, ex2, ey2), fill=color, width=3 * scale)
-        angle = 0.48
-        for sign in (-1, 1):
-            cos_a = ux * __import__("math").cos(angle) - sign * uy * __import__("math").sin(angle)
-            sin_a = uy * __import__("math").cos(angle) + sign * ux * __import__("math").sin(angle)
-            draw.line((ex2, ey2, ex2 - cos_a * 15 * scale, ey2 - sin_a * 15 * scale), fill=color, width=3 * scale)
-        if label:
-            mx, my = (sx + ex) / 2, (sy + ey) / 2
-            draw.text((mx - 32 * scale, my - 26 * scale), label, font=small, fill=color, stroke_width=3 * scale, stroke_fill="#f8faf8")
-
-    draw.text((55 * scale, 30 * scale), "ĐỀ 24  |  KIẾN TRÚC TASK TRACKER", font=title_font, fill="#143b2a")
-    # request and data path
-    box(70, 125, 220, 92, "Trình duyệt", "HTTP qua loopback :8080", "#eef4ff", "#c8d8f2")
-    box(365, 125, 245, 92, "Nginx", "Reverse proxy · headers", "#e7f5ed", "#c1dfce")
-    box(690, 125, 270, 92, "Task Tracker", "Express · API · metrics", "#e7f5ed", "#c1dfce")
-    box(1080, 125, 260, 92, "PostgreSQL", "Volume · role task_app", "#f1efff", "#d5cef2")
-    box(1080, 270, 260, 82, "pgAdmin", "DB tool · loopback :5050", "#fff4e4", "#f0dfbd")
-    arrow((290, 171), (365, 171), "HTTP")
-    arrow((610, 171), (690, 171), "proxy")
-    arrow((960, 171), (1080, 171), "SQL")
-    arrow((1210, 270), (1210, 217), "SQL")
-
-    # metrics flow
-    draw.rounded_rectangle((55 * scale, 420 * scale, 1545 * scale, 665 * scale), radius=24 * scale, outline="#b5cbea", width=2 * scale)
-    draw.text((78 * scale, 434 * scale), "OBSERVABILITY NETWORK  ·  METRICS", font=node_title, fill="#345c90")
-    box(95, 490, 260, 100, "Prometheus", "Scrape interval 15s", "#edf4ff", "#c8d8f2")
-    box(465, 490, 420, 100, "Exporters", "Postgres · Nginx · cAdvisor", "#edf4ff", "#c8d8f2")
-    box(1030, 490, 310, 100, "Grafana", "Dashboard · Explore", "#edf4ff", "#c8d8f2")
-    arrow((355, 540), (465, 540), "scrape")
-    arrow((690, 217), (650, 490), "/metrics", "#4774ad", True)
-    arrow((1175, 217), (780, 490), "pg exporter", "#4774ad", True)
-    arrow((485, 217), (780, 490), "nginx exporter", "#4774ad", True)
-    arrow((885, 540), (1030, 540), "PromQL")
-
-    # logs flow
-    draw.rounded_rectangle((55 * scale, 720 * scale, 1545 * scale, 985 * scale), radius=24 * scale, outline="#d8c6ea", width=2 * scale)
-    draw.text((78 * scale, 733 * scale), "LOGGING NETWORK  ·  LOGQL", font=node_title, fill="#704f91")
-    box(90, 800, 310, 100, "Log files", "App JSON · Nginx access/error", "#f8f0fc", "#dfcdee")
-    box(505, 800, 260, 100, "Promtail", "Reads read-only volume", "#f8f0fc", "#dfcdee")
-    box(875, 800, 250, 100, "Loki", "Log store", "#f8f0fc", "#dfcdee")
-    box(1230, 800, 250, 100, "Grafana Explore", "LogQL queries", "#f8f0fc", "#dfcdee")
-    arrow((400, 850), (505, 850), "files", "#8557a6")
-    arrow((765, 850), (875, 850), "push", "#8557a6")
-    arrow((1125, 850), (1230, 850), "query", "#8557a6")
-
-    image.resize((width, height), Image.Resampling.LANCZOS).save(ARCHITECTURE)
+            run = paragraph.add_run(item[1:-1])
+            set_run_font(run, size=size, bold=base_bold, italic=True)
+        pos = match.end()
+    if pos < len(text):
+        run = paragraph.add_run(text[pos:])
+        set_run_font(run, size=size, bold=base_bold, italic=base_italic)
 
 
-def set_cell_shading(cell, fill):
-    tc_pr = cell._tc.get_or_add_tcPr()
-    shd = tc_pr.find(qn("w:shd"))
-    if shd is None:
-        shd = OxmlElement("w:shd")
-        tc_pr.append(shd)
-    shd.set(qn("w:fill"), fill)
+def set_cell_shading(cell, fill: str) -> None:
+    props = cell._tc.get_or_add_tcPr()
+    shade = props.find(qn("w:shd"))
+    if shade is None:
+        shade = OxmlElement("w:shd")
+        props.append(shade)
+    shade.set(qn("w:fill"), fill)
 
 
-def set_cell_margins(cell, top=95, start=110, bottom=95, end=110):
-    tc = cell._tc
-    tc_pr = tc.get_or_add_tcPr()
-    tc_mar = tc_pr.first_child_found_in("w:tcMar")
-    if tc_mar is None:
-        tc_mar = OxmlElement("w:tcMar")
-        tc_pr.append(tc_mar)
+def set_cell_margins(cell, top=55, start=90, bottom=55, end=90) -> None:
+    props = cell._tc.get_or_add_tcPr()
+    margins = props.first_child_found_in("w:tcMar")
+    if margins is None:
+        margins = OxmlElement("w:tcMar")
+        props.append(margins)
     for side, value in (("top", top), ("start", start), ("bottom", bottom), ("end", end)):
-        node = tc_mar.find(qn(f"w:{side}"))
+        node = margins.find(qn(f"w:{side}"))
         if node is None:
             node = OxmlElement(f"w:{side}")
-            tc_mar.append(node)
+            margins.append(node)
         node.set(qn("w:w"), str(value))
         node.set(qn("w:type"), "dxa")
 
 
-def set_table_borders(table):
-    tbl_pr = table._tbl.tblPr
-    borders = tbl_pr.first_child_found_in("w:tblBorders")
+def set_table_borders(table) -> None:
+    props = table._tbl.tblPr
+    borders = props.first_child_found_in("w:tblBorders")
     if borders is None:
         borders = OxmlElement("w:tblBorders")
-        tbl_pr.append(borders)
+        props.append(borders)
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
         tag = qn(f"w:{edge}")
-        element = borders.find(tag)
-        if element is None:
-            element = OxmlElement(f"w:{edge}")
-            borders.append(element)
-        element.set(qn("w:val"), "single")
-        element.set(qn("w:sz"), "4")
-        element.set(qn("w:space"), "0")
-        element.set(qn("w:color"), "D9D9D9")
+        node = borders.find(tag)
+        if node is None:
+            node = OxmlElement(f"w:{edge}")
+            borders.append(node)
+        node.set(qn("w:val"), "single")
+        node.set(qn("w:sz"), "4")
+        node.set(qn("w:space"), "0")
+        node.set(qn("w:color"), "D9D9D9")
 
 
-def set_run_font(run, name="Times New Roman", size=12, color="000000", bold=None):
-    run.font.name = name
-    run._element.get_or_add_rPr().rFonts.set(qn("w:ascii"), name)
-    run._element.get_or_add_rPr().rFonts.set(qn("w:hAnsi"), name)
-    run._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), name)
-    run.font.size = Pt(size)
-    run.font.color.rgb = RGBColor.from_string(color)
-    if bold is not None:
-        run.bold = bold
+def parse_table(lines, doc, table_index: int) -> None:
+    rows = []
+    for line in lines:
+        raw = line.strip().strip("|")
+        cells = [cell.strip().replace(r"\|", "|") for cell in re.split(r"(?<!\\)\|", raw)]
+        if cells and all(re.fullmatch(r"[-: ]+", cell or "-") for cell in cells):
+            continue
+        rows.append(cells)
+    if not rows or table_index >= len(TABLE_WIDTHS):
+        raise ValueError("Unexpected table count or empty table in report source.")
+    columns = max(map(len, rows))
+    widths = TABLE_WIDTHS[table_index]
+    if columns != len(widths):
+        raise ValueError(f"Table {table_index + 1} has {columns} columns; expected {len(widths)}.")
+    table = doc.add_table(rows=0, cols=columns)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    table.style = "Table Grid"
+    for index, width in enumerate(widths):
+        table.columns[index].width = Inches(width)
+    for row_index, values in enumerate(rows):
+        cells = table.add_row().cells
+        for col_index, cell in enumerate(cells):
+            cell.width = Inches(widths[col_index])
+            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+            cell.text = ""
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            p.paragraph_format.space_after = Pt(0)
+            p.paragraph_format.line_spacing = 1.0
+            text = values[col_index] if col_index < len(values) else ""
+            add_inline(p, text, size=10.5, base_bold=(row_index == 0))
+            set_cell_shading(cell, "E5E7EB" if row_index == 0 else ("F5F6F8" if row_index % 2 == 0 else "FFFFFF"))
+    table.rows[0]._tr.get_or_add_trPr().append(OxmlElement("w:tblHeader"))
+    set_table_borders(table)
 
 
-def add_inline(paragraph, text, *, code=False):
-    # Supports **bold** and `inline code`, keeping the original Vietnamese text.
-    pattern = re.compile(r"(\*\*.*?\*\*|`[^`]+`)")
-    base_size = paragraph.style.font.size.pt if paragraph.style.font.size else 12
-    pos = 0
-    for match in pattern.finditer(text):
-        if match.start() > pos:
-            run = paragraph.add_run(text[pos:match.start()])
-            set_run_font(run, size=base_size)
-        token = match.group(0)
-        if token.startswith("**"):
-            run = paragraph.add_run(token[2:-2])
-            set_run_font(run, size=base_size, bold=True)
-        else:
-            run = paragraph.add_run(token[1:-1])
-            set_run_font(run, name="Consolas", size=10.5, color="000000")
-        pos = match.end()
-    if pos < len(text):
-        run = paragraph.add_run(text[pos:])
-        set_run_font(run, name="Consolas" if code else "Times New Roman", size=9 if code else base_size)
+def configure_styles(doc) -> None:
+    for style in doc.styles:
+        if not hasattr(style, "font"):
+            continue
+        style.font.name = FONT
+        style._element.get_or_add_rPr().rFonts.set(qn("w:ascii"), FONT)
+        style._element.get_or_add_rPr().rFonts.set(qn("w:hAnsi"), FONT)
+        style._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), FONT)
+
+    normal = doc.styles["Normal"]
+    normal.font.size = Pt(11.5)
+    normal.paragraph_format.line_spacing = 1.0
+    normal.paragraph_format.space_after = Pt(0)
+    for name, size in (("Title", 19), ("Heading 1", 14), ("Heading 2", 12), ("Heading 3", 11.5)):
+        style = doc.styles[name]
+        style.font.size = Pt(size)
+        style.font.bold = True
+        style.paragraph_format.keep_with_next = True
+        style.paragraph_format.space_before = Pt(0)
+        style.paragraph_format.space_after = Pt(3 if name != "Title" else 0)
+        style.paragraph_format.line_spacing = 1.0
+    caption = doc.styles["Caption"]
+    caption.font.size = Pt(9)
+    caption.font.italic = True
+    caption.paragraph_format.space_before = Pt(0)
+    caption.paragraph_format.space_after = Pt(5)
+    caption.paragraph_format.line_spacing = 1.0
 
 
-def add_page_field(paragraph):
+def add_page_field(paragraph) -> None:
     run = paragraph.add_run()
     begin = OxmlElement("w:fldChar")
     begin.set(qn("w:fldCharType"), "begin")
@@ -196,136 +226,114 @@ def add_page_field(paragraph):
     instruction.text = " PAGE "
     separate = OxmlElement("w:fldChar")
     separate.set(qn("w:fldCharType"), "separate")
-    text = OxmlElement("w:t")
-    text.text = "2"
+    placeholder = OxmlElement("w:t")
+    placeholder.text = "2"
     end = OxmlElement("w:fldChar")
     end.set(qn("w:fldCharType"), "end")
-    run._r.extend((begin, instruction, separate, text, end))
-    set_run_font(run, size=9, color="76827A")
+    run._r.extend((begin, instruction, separate, placeholder, end))
+    set_run_font(run, size=9)
 
 
-def parse_table(lines, doc):
-    rows = []
-    for line in lines:
-        raw = line.strip()
-        if not raw.startswith("|"):
-            continue
-        # Strip outer pipes defining table boundaries
-        if raw.startswith("|"):
-            raw = raw[1:]
-        if raw.endswith("|") and not raw.endswith(r"\|"):
-            raw = raw[:-1]
-        raw_cells = re.split(r"(?<!\\)\|", raw)
-        cells = [part.strip().replace(r"\|", "|") for part in raw_cells]
-        if cells and all(re.fullmatch(r"[-: ]+", cell or "-") for cell in cells):
-            continue
-        rows.append(cells)
-    if not rows:
-        return
-    columns = max(len(row) for row in rows)
-    table = doc.add_table(rows=0, cols=columns)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.autofit = False
-    table.style = "Table Grid"
-    widths = ([5.7, 0.8] if columns == 2 and rows[0][-1] == "Trang" else [2.0, 4.5] if columns == 2 else [1.25, 2.7, 2.55] if columns == 3 else [6.5 / columns] * columns)
-    for n, width in enumerate(widths):
-        table.columns[n].width = Inches(width)
-    for row_index, values in enumerate(rows):
-        cells = table.add_row().cells
-        for col_index in range(columns):
-            value = values[col_index] if col_index < len(values) else ""
-            cell = cells[col_index]
-            cell.width = Inches(widths[col_index])
-            cell.text = ""
-            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-            set_cell_margins(cell)
-            paragraph = cell.paragraphs[0]
-            paragraph.paragraph_format.space_after = Pt(1)
-            paragraph.paragraph_format.line_spacing = 1.08
-            add_inline(paragraph, value)
-            for run in paragraph.runs:
-                set_run_font(run, size=10.5, color="FFFFFF" if row_index == 0 else "000000", bold=(row_index == 0))
-            set_cell_shading(cell, "374151" if row_index == 0 else ("F5F6F8" if row_index % 2 == 0 else "FFFFFF"))
-    table.rows[0]._tr.get_or_add_trPr().append(OxmlElement("w:tblHeader"))
-    set_table_borders(table)
-    spacer = doc.add_paragraph()
-    spacer.paragraph_format.space_after = Pt(2)
-
-
-def configure_styles(doc):
-    normal = doc.styles["Normal"]
-    normal.font.name = "Times New Roman"
-    normal._element.rPr.rFonts.set(qn("w:ascii"), "Times New Roman")
-    normal._element.rPr.rFonts.set(qn("w:hAnsi"), "Times New Roman")
-    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-    normal.font.size = Pt(12)
-    normal.font.color.rgb = RGBColor(0, 0, 0)
-    normal.paragraph_format.line_spacing = 1.12
-    normal.paragraph_format.space_after = Pt(5)
-    for name, size in (("Title", 22), ("Heading 1", 15), ("Heading 2", 13), ("Heading 3", 12)):
-        style = doc.styles[name]
-        style.font.name = "Times New Roman"
-        style._element.rPr.rFonts.set(qn("w:ascii"), "Times New Roman")
-        style._element.rPr.rFonts.set(qn("w:hAnsi"), "Times New Roman")
-        style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-        style.font.size = Pt(size)
-        style.font.bold = True
-        style.font.color.rgb = RGBColor(0, 0, 0)
-        style.paragraph_format.keep_with_next = True
-        style.paragraph_format.space_before = Pt(10 if name != "Title" else 0)
-        style.paragraph_format.space_after = Pt(6)
-    title_ppr = doc.styles["Title"]._element.pPr
-    if title_ppr is not None:
-        title_borders = title_ppr.find(qn("w:pBdr"))
-        if title_borders is not None:
-            title_ppr.remove(title_borders)
-
-
-def main():
-    if not ARCHITECTURE.exists():
-        make_architecture()
-    doc = Document()
-    section = doc.sections[0]
+def configure_section(section) -> None:
     section.page_width = Inches(8.27)
     section.page_height = Inches(11.69)
-    section.top_margin = Inches(0.72)
-    section.bottom_margin = Inches(0.72)
-    section.left_margin = Inches(0.78)
-    section.right_margin = Inches(0.70)
+    section.top_margin = Inches(0.65)
+    section.bottom_margin = Inches(0.61)
+    section.left_margin = Inches(0.87)
+    section.right_margin = Inches(0.71)
+    section.header_distance = Inches(0.28)
+    section.footer_distance = Inches(0.28)
     section.different_first_page_header_footer = True
-    configure_styles(doc)
 
     header = section.header.paragraphs[0]
-    header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = header.add_run("TRIỂN KHAI VÀ QUẢN TRỊ HỆ THỐNG PHẦN MỀM  ·  ĐỀ 24")
-    set_run_font(run, size=8.2, color="000000")
+    header.paragraph_format.space_after = Pt(0)
+    header.paragraph_format.tab_stops.add_tab_stop(Inches(6.68), WD_TAB_ALIGNMENT.RIGHT)
+    add_inline(header, "ĐẶNG QUỐC DOANH  •  DTC245200775", size=8.5)
+    run = header.add_run("\t")
+    set_run_font(run, size=8.5)
+    add_inline(header, "TASK TRACKER  •  ĐỀ 24", size=8.5)
+
     footer = section.footer.paragraphs[0]
-    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    footer.paragraph_format.space_after = Pt(0)
     add_page_field(footer)
 
-    lines = SOURCE.read_text(encoding="utf-8").splitlines()
+
+def add_picture(doc, alt: str, relative_path: str, image_index: int) -> None:
+    path = ROOT / relative_path
+    if not path.is_file():
+        raise FileNotFoundError(f"Missing tracked report image: {path}")
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_before = Pt(2)
+    paragraph.paragraph_format.space_after = Pt(0)
+    paragraph.paragraph_format.keep_with_next = True
+    inline = paragraph.add_run().add_picture(str(path), width=Inches(IMAGE_WIDTHS[image_index]))
+    inline._inline.docPr.set("descr", alt)
+
+
+def build() -> Path:
+    text = SOURCE.read_text(encoding="utf-8-sig")
+    if not text.startswith(REPORT_MARKER):
+        raise ValueError("Report source marker is missing; refusing to build from an unsynchronized source.")
+    lines = text.splitlines()
+    page_breaks = sum(line.strip() == "<!-- PAGEBREAK -->" for line in lines)
+    image_matches = [re.fullmatch(r"!\[(.*?)\]\((.*?)\)", line.strip()) for line in lines if line.strip().startswith("![")]
+    image_paths = [match.group(2) for match in image_matches if match]
+    if page_breaks != EXPECTED_PAGE_BREAKS:
+        raise ValueError(f"Expected {EXPECTED_PAGE_BREAKS} manual page breaks; found {page_breaks}.")
+    if image_paths != EXPECTED_IMAGES:
+        raise ValueError("Report source must reference the 18 approved, tracked figures once and in order.")
+    if "DTC245200775" not in text or "Đặng Quốc Doanh" not in text:
+        raise ValueError("Report student identity is missing.")
+    if not (ROOT / "architecture.png").is_file():
+        raise FileNotFoundError("Tracked architecture image is missing.")
+
+    doc = Document()
+    configure_styles(doc)
+    configure_section(doc.sections[0])
+    doc.core_properties.title = "Báo cáo Đề 24 — Hệ thống quản lý công việc Task Tracker"
+    doc.core_properties.subject = "Triển khai và Quản trị Hệ thống Phần mềm"
+    doc.core_properties.author = "Đặng Quốc Doanh"
+    doc.core_properties.comments = "Đề 24; source Markdown và 18 hình minh chứng nằm trong repository."
+    doc.core_properties.category = "Báo cáo học phần"
+
+    cover = False
+    image_index = 0
+    table_index = 0
     in_code = False
-    code_lines = []
-    in_title_page = True
+    code_lines: list[str] = []
     i = 0
     while i < len(lines):
-        line = lines[i]
+        raw = lines[i]
+        line = raw.strip()
+        if not line:
+            i += 1
+            continue
+        if line == "<!-- COVER -->":
+            cover = True
+            i += 1
+            continue
+        if line == "<!-- PAGEBREAK -->":
+            doc.add_page_break()
+            cover = False
+            i += 1
+            continue
+        if line.startswith("<!--"):
+            i += 1
+            continue
         if line.startswith("```"):
             if not in_code:
                 in_code, code_lines = True, []
             else:
                 p = doc.add_paragraph()
-                p.paragraph_format.left_indent = Inches(0.18)
-                p.paragraph_format.right_indent = Inches(0.12)
-                p.paragraph_format.space_before = Pt(3)
-                p.paragraph_format.space_after = Pt(7)
-                p.paragraph_format.line_spacing = 1.02
-                p.paragraph_format.keep_together = True
-                for n, code_line in enumerate(code_lines):
+                p.paragraph_format.left_indent = Inches(0.15)
+                p.paragraph_format.space_after = Pt(2)
+                p.paragraph_format.line_spacing = 1.0
+                for n, code in enumerate(code_lines):
                     if n:
                         p.add_run().add_break()
-                    run = p.add_run(code_line or " ")
-                    set_run_font(run, name="Consolas", size=9, color="000000")
+                    add_inline(p, code, size=10.5)
                 in_code = False
             i += 1
             continue
@@ -333,168 +341,96 @@ def main():
             code_lines.append(line)
             i += 1
             continue
-        if line.strip() == "<!-- PAGEBREAK -->":
-            doc.add_page_break()
-            in_title_page = False
-            i += 1
-            continue
-        if line.strip().startswith("<!--"):
-            i += 1
-            continue
-        if not line.strip():
-            i += 1
-            continue
         if line.startswith("|"):
-            table_lines = []
-            while i < len(lines) and lines[i].startswith("|"):
-                table_lines.append(lines[i])
+            block = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                block.append(lines[i].strip())
                 i += 1
-            parse_table(table_lines, doc)
+            parse_table(block, doc, table_index)
+            table_index += 1
+            continue
+        image = re.fullmatch(r"!\[(.*?)\]\((.*?)\)", line)
+        if image:
+            add_picture(doc, image.group(1), image.group(2), image_index)
+            image_index += 1
+            i += 1
+            continue
+        if line.startswith("*") and line.endswith("*") and line.startswith("*Hình "):
+            p = doc.add_paragraph(style="Caption")
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.keep_together = True
+            add_inline(p, line[1:-1], size=9, base_italic=True)
+            i += 1
             continue
         if line.startswith("# "):
-            text = line[2:].strip()
-            if in_title_page:
+            content = line[2:].strip()
+            if cover:
                 p = doc.add_paragraph(style="Title")
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 p.paragraph_format.space_before = Pt(34)
-                p.paragraph_format.space_after = Pt(17)
-                ppr = p._p.get_or_add_pPr()
-                direct_borders = ppr.find(qn("w:pBdr"))
-                if direct_borders is not None:
-                    ppr.remove(direct_borders)
-                add_inline(p, text)
+                p.paragraph_format.space_after = Pt(8)
+                add_inline(p, content, size=19, base_bold=True)
             else:
                 p = doc.add_paragraph(style="Heading 1")
-                if (text.startswith("CHƯƠNG") and not text.startswith("CHƯƠNG 1 ")) or text.startswith("PHỤ LỤC A") or text.startswith("KẾT LUẬN"):
-                    p.paragraph_format.page_break_before = True
-                add_inline(p, text)
+                add_inline(p, content, size=14, base_bold=True)
             i += 1
             continue
         if line.startswith("## "):
-            text = line[3:].strip()
-            if in_title_page:
+            content = line[3:].strip()
+            if cover:
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_after = Pt(14)
-                add_inline(p, text)
-                for run in p.runs:
-                    set_run_font(run, size=16, color="000000", bold=True)
+                p.paragraph_format.space_after = Pt(2)
+                add_inline(p, content, size=17, base_bold=True)
             else:
                 p = doc.add_paragraph(style="Heading 2")
-                add_inline(p, text)
+                add_inline(p, content, size=12, base_bold=True)
             i += 1
             continue
         if line.startswith("### "):
-            p = doc.add_paragraph(style="Heading 3")
-            if in_title_page:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_after = Pt(20)
-            add_inline(p, line[4:].strip())
-            i += 1
-            continue
-        img_match = re.match(r"^!\[(.*?)\]\((.*?)\)", line)
-        if img_match:
-            img_rel = img_match.group(2)
-            img_path = ROOT / img_rel
-            if img_path.exists():
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_before = Pt(6)
-                p.paragraph_format.space_after = Pt(2)
-                p.paragraph_format.keep_with_next = True
-                image_width = 5.5 if img_path.name == "grafana-dashboard.png" else 5.8 if img_path.name == "prometheus-metric-query.png" else 6.25
-                picture = p.add_run().add_picture(str(img_path), width=Inches(image_width))
-                picture._inline.docPr.set("descr", img_match.group(1))
-            else:
-                raise FileNotFoundError(f"Missing evidence image: {img_path}")
-            i += 1
-            continue
-        if line.startswith("*Hình ") and line.endswith("*"):
-            caption = doc.add_paragraph(line.strip("*"))
-            caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            caption.paragraph_format.space_before = Pt(1)
-            caption.paragraph_format.space_after = Pt(6)
-            for run in caption.runs:
-                set_run_font(run, size=10, color="000000")
-                run.italic = True
-            i += 1
-            continue
-        if line.startswith("**[CHÈN HÌNH"):
-            if "pgadmin" in line.lower() and (ROOT / "screenshots" / "pgadmin-tasks.png").exists():
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_before = Pt(6)
-                p.paragraph_format.space_after = Pt(2)
-                p.add_run().add_picture(str(ROOT / "screenshots" / "pgadmin-tasks.png"), width=Inches(6.2))
-                caption = doc.add_paragraph("Hình 4.2. pgAdmin kết nối server và hiển thị dữ liệu bảng tasks")
-                caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for run in caption.runs:
-                    set_run_font(run, size=10, color="000000")
-                    run.italic = True
-            else:
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.space_before = Pt(4)
-                p.paragraph_format.space_after = Pt(4)
-                add_inline(p, line)
-                for run in p.runs:
-                    set_run_font(run, size=9.5, color="8A5A1B", bold=True)
-            i += 1
-            continue
-        if line.startswith("- "):
-            p = doc.add_paragraph(style="List Bullet")
-            p.paragraph_format.space_after = Pt(3)
-            add_inline(p, line[2:].strip())
-            i += 1
-            continue
-        if re.match(r"^\d+[.)] ", line):
             p = doc.add_paragraph()
-            p.paragraph_format.left_indent = Inches(0.3)
-            p.paragraph_format.first_line_indent = Inches(-0.3)
-            p.paragraph_format.space_after = Pt(3)
-            marker = re.match(r"^(\d+[.)]) ", line).group(1)
-            item_text = re.sub(r"^\d+[.)] ", "", line)
-            # The invisible leading character keeps Word/LibreOffice from
-            # consuming the first literal number as automatic list formatting.
-            add_inline(p, f"\u200b{marker} {item_text}")
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER if cover else WD_ALIGN_PARAGRAPH.LEFT
+            p.paragraph_format.space_after = Pt(1 if cover else 3)
+            add_inline(p, line[4:].strip(), size=15 if cover else 11.5, base_bold=True)
             i += 1
             continue
-        if line.startswith("> "):
-            p = doc.add_paragraph()
-            p.paragraph_format.left_indent = Inches(0.18)
-            add_inline(p, line[2:])
-            for run in p.runs:
-                run.italic = True
-                run.font.color.rgb = RGBColor(81, 99, 87)
-            i += 1
-            continue
-        # Keep consecutive lines in the same Markdown paragraph together.
-        text_parts = [line.strip()]
-        i += 1
-        while (i < len(lines) and lines[i].strip()
-               and not lines[i].startswith(("# ", "## ", "### ", "- ", "> ", "|", "```", "![", "*Hình ", "**[CHÈN HÌNH"))
-               and lines[i].strip() != "<!-- PAGEBREAK -->"
-               and not re.match(r"^\d+[.)] ", lines[i])):
-            text_parts.append(lines[i].strip())
-            i += 1
-        text = " ".join(text_parts).replace("  ", " ")
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        if text.startswith("Prometheus sử dụng chu kỳ scrape"):
-            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        if in_title_page:
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.paragraph_format.space_after = Pt(8)
-        add_inline(p, text)
 
-    doc.core_properties.title = "Báo cáo thực hành Đề 24 — Task Tracker"
-    doc.core_properties.subject = "Triển khai và Quản trị Hệ thống Phần mềm"
-    doc.core_properties.author = "Đặng Quốc Doanh"
-    doc.core_properties.comments = "Đề tài 24: Hệ thống Quản lý Công việc Task Tracker - DTC245200775"
-    doc.core_properties.category = "Báo cáo thực hành"
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if cover else WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.space_after = Pt(0)
+        if cover and line.startswith("TRƯỜNG "):
+            p.paragraph_format.space_before = Pt(12)
+        add_inline(p, line, size=11.5)
+        i += 1
+
+    if in_code:
+        raise ValueError("Unclosed fenced code block in report source.")
+    if image_index != len(EXPECTED_IMAGES) or table_index != len(TABLE_WIDTHS):
+        raise ValueError(f"Builder consumed {image_index} figures and {table_index} tables unexpectedly.")
     doc.save(OUTPUT)
-    print(f"Wrote {OUTPUT}")
+    validate_output(OUTPUT)
+    print(f"Wrote {OUTPUT} with 18 tracked images and 9 explicit page breaks (10 planned pages).")
+    return OUTPUT
+
+
+def validate_output(path: Path) -> None:
+    built = Document(path)
+    if len(built.inline_shapes) != 18:
+        raise ValueError(f"Built DOCX contains {len(built.inline_shapes)} images; expected 18.")
+    runs = [r for p in built.paragraphs for r in p.runs if r.text.strip()]
+    runs.extend(r for t in built.tables for row in t.rows for c in row.cells for p in c.paragraphs for r in p.runs if r.text.strip())
+    wrong_fonts = [r.text for r in runs if r.font.name != FONT]
+    if wrong_fonts:
+        raise ValueError(f"Found editable text not explicitly set in {FONT}: {wrong_fonts[:3]}")
+    content = "\n".join(p.text for p in built.paragraphs)
+    if "Đặng Quốc Doanh" not in content:
+        raise ValueError("Built DOCX is missing the student identity.")
+    if "12 ca Unit/API" not in content or "13 ca" not in content:
+        raise ValueError("Current 13-test count and historical 12-test image note must both be present.")
+    if "Kết quả runtime Windows mới nhất do người dùng cung cấp" not in content:
+        raise ValueError("User-provided current Windows runtime results are missing from the report.")
 
 
 if __name__ == "__main__":
-    main()
+    build()

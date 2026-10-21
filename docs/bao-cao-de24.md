@@ -1,408 +1,250 @@
+<!-- DE24_REPORT_SOURCE: ten-page-v1 -->
+
+<!-- COVER -->
+TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN
+
+VÀ TRUYỀN THÔNG THÁI NGUYÊN
+
+NGÀNH KHOA HỌC MÁY TÍNH
+
 # BÁO CÁO HỌC PHẦN
 
-## TRIỂN KHAI VÀ QUẢN TRỊ HỆ THỐNG PHẦN MỀM
+## TRIỂN KHAI VÀ QUẢN TRỊ
+## HỆ THỐNG PHẦN MỀM
 
-### ĐỀ 24 HỆ THỐNG QUẢN LÝ CÔNG VIỆC TASK TRACKER
+### ĐỀ 24
+### HỆ THỐNG QUẢN LÝ CÔNG VIỆC
+### TASK TRACKER
 
-**Sinh viên:** Đặng Quốc Doanh
+Sinh viên thực hiện: Đặng Quốc Doanh
 
-**Mã số sinh viên:** DTC245200775
+Mã số sinh viên: DTC245200775
 
-**Lớp:** KHMT K23A
+Lớp: KHMT K23A
 
-**Trường:** Trường Đại học Công nghệ Thông tin và Truyền thông Thái Nguyên
+Giảng viên hướng dẫn: Hoàng Văn Tâm
 
-**Giảng viên hướng dẫn:** Hoàng Văn Tâm
-
-**Năm học:** 2026
+Năm học: 2026
 
 **Thái Nguyên, tháng 10 năm 2026**
 
 <!-- PAGEBREAK -->
-<!-- REPORT_COMPACT -->
 
-# MỤC LỤC
+# 1  Mục tiêu và thiết kế hệ thống
 
-| Nội dung | Trang |
-|---|---:|
-| Chương 1 Giới thiệu và triển khai bằng Docker Compose | 3–4 |
-| Chương 2 Các công nghệ sử dụng | 5 |
-| Chương 3 Kiến trúc và luồng hoạt động | 6–7 |
-| Chương 4 Task Tracker và PostgreSQL | 8–11 |
-| Chương 5 Nginx reverse proxy và security headers | 12 |
-| Chương 6 Prometheus và Grafana | 13–14 |
-| Chương 7 Loki Promtail và LogQL | 15–16 |
-| Chương 8 Hardening và kiểm thử | 17–19 |
-| Kết luận và hướng phát triển | 20 |
-| Tài liệu tham khảo | 20 |
-| Phụ lục A Hướng dẫn chạy trên Windows | 21 |
-| Phụ lục B GitHub và trình tự demo | 21 |
+Đề tài triển khai ứng dụng quản lý công việc cá nhân bằng Node.js/Express, PostgreSQL và pgAdmin. Hệ thống hỗ trợ task, deadline và trạng thái; toàn bộ dịch vụ chạy bằng Docker Compose. Nginx cung cấp reverse proxy; Prometheus/Grafana giám sát; Loki/Promtail tập trung log. Báo cáo trình bày cấu hình, cách thao tác và kết quả đã ghi nhận kèm minh chứng.
 
-Báo cáo trình bày kiến trúc, quá trình triển khai và kết quả kiểm tra hệ thống Task Tracker. Các phần thực hành đi theo trình tự chạy dịch vụ, thao tác website, kiểm tra cơ sở dữ liệu, theo dõi metrics, truy vấn log và xác minh hardening. Mỗi hình có lệnh hoặc thao tác tương ứng để người đọc thực hiện lại.
+![Sơ đồ kiến trúc Task Tracker](architecture.png)
+*Hình 1. Kiến trúc và các luồng HTTP, SQL, metrics, log*
 
-Nhật ký kiểm tra đầy đủ được lưu trong `docs/logs/`. Mã chạy lại nằm trong `scripts/`; báo cáo chỉ giữ kết quả chính, tránh chép lại toàn bộ log dài.
+Luồng nghiệp vụ: trình duyệt → Nginx → Express → PostgreSQL. Prometheus scrape app và exporter; Grafana dùng PromQL để hiển thị. App/Nginx ghi file trên volume `service_logs`; Promtail đọc file, gửi Loki để Grafana Explore truy vấn LogQL.
+
+| Yêu cầu học phần | Nội dung và trang |
+|---|---|
+| GitHub và Docker Compose | Source, README, 3 mốc commit, khởi chạy — tr. 3 |
+| Task, deadline, trạng thái; PostgreSQL/pgAdmin | Chức năng giao diện, API và dữ liệu — tr. 4–5 |
+| Nginx reverse proxy | Proxy và 5 security headers — tr. 6 |
+| Prometheus và Grafana | Giám sát app, web, DB, container — tr. 7 |
+| Loki và Promtail | Log tập trung, 3 query LogQL — tr. 8 |
+| Hardening và nghiệm thu | Quyền, mạng, test và persistence — tr. 9–10 |
+
+## Phạm vi triển khai
+
+Bản hiện tại phục vụ quản lý công việc cá nhân tại máy demo Windows. Chưa có đăng nhập hoặc phân quyền nhóm. HTTP kèm security headers đáp ứng lựa chọn của đề; không coi đây là triển khai HTTPS. Các ảnh là minh chứng các phiên đã chạy, không phải kết quả chạy mới của lần biên tập báo cáo này.
 
 <!-- PAGEBREAK -->
 
-# CHƯƠNG 1 GIỚI THIỆU VÀ TRIỂN KHAI BẰNG DOCKER COMPOSE
+# 2  GitHub và triển khai bằng Docker Compose
 
-## Mục tiêu và phạm vi
+Repository: [github.com/quocdoanhdang8/DTC245200775-task-tracker-de24](https://github.com/quocdoanhdang8/DTC245200775-task-tracker-de24). Kho mã chứa ứng dụng, Dockerfile, Compose, cấu hình Nginx/monitoring, scripts kiểm tra và README hướng dẫn vận hành.
 
-Task Tracker hỗ trợ tạo, xem, sửa, xóa và lọc công việc; mỗi task có tiêu đề, mô tả, hạn hoàn thành, trạng thái và mức ưu tiên. Dữ liệu được lưu trong PostgreSQL và xem bằng pgAdmin. Bản triển khai phục vụ quản lý công việc cá nhân trên máy chạy Docker Desktop; chưa có đăng nhập hoặc phân quyền theo nhóm.
-
-Website được truy cập qua Nginx. Prometheus và Grafana giám sát ứng dụng, web server, database và container. Promtail chuyển log ứng dụng và Nginx vào Loki để truy vấn bằng LogQL. Toàn bộ dịch vụ được khai báo trong `docker-compose.yml`.
-
-## Đối chiếu yêu cầu học phần
-
-| Tiêu chí | Thành phần thực hiện | Bằng chứng trong báo cáo |
-|---|---|---|
-| GitHub và README | Source, cấu hình, lịch sử commit, hướng dẫn chạy | Phụ lục B; repository |
-| Ứng dụng và database | Express, PostgreSQL, pgAdmin | Hình 4.1–4.5 |
-| Nginx reverse proxy | Proxy tới task-app; 5 security headers | Hình 5.1 |
-| Prometheus và Grafana | 5 scrape jobs; dashboard app, Nginx, DB, CPU | Hình 6.1–6.3 |
-| Loki và Promtail | Thu thập file log; 3 truy vấn LogQL | Hình 7.1–7.2 |
-| Hardening | Non-root, read-only, CapDrop, mạng và role DB | Hình 8.2–8.3 |
-| Triển khai và trình bày | Compose, kiểm thử, persistence, hình minh chứng | Hình 1.1–1.2; Chương 8 |
-
-## Khởi chạy và kiểm tra dịch vụ
-
-Mở Docker Desktop, đợi Docker Engine sẵn sàng rồi chạy các lệnh sau tại thư mục gốc dự án. `config --quiet` chỉ kiểm tra cấu hình, tránh in mật khẩu đã nội suy từ `.env`.
-
-```powershell
-docker compose config --quiet
-docker compose up -d --build
-```
-
-![Hình 1.1 Kiểm tra cấu hình và khởi chạy](screenshots/compose-startup.png)
-*Hình 1.1. Kiểm tra Compose và khởi chạy các dịch vụ*
-
-Dùng `docker compose ps -a` để xem cả container đang chạy và container đã kết thúc. Hệ thống có 12 service: 11 service vận hành và `log-init` chạy một lần để cấp quyền volume. `log-init` ở trạng thái `Exited (0)` là hoàn thành thành công; chỉ những service có healthcheck mới hiển thị `healthy`.
-
-![Hình 1.2 Trạng thái dịch vụ](screenshots/services-status.png)
-*Hình 1.2. Trạng thái các service và cổng được publish*
-
-# CHƯƠNG 2 CÁC CÔNG NGHỆ SỬ DỤNG
-
-Docker image đóng gói ứng dụng cùng môi trường chạy. Docker Compose mô tả các service, network, volume và healthcheck trong một tệp YAML, giúp triển khai lại bằng cùng bộ lệnh. Named volume lưu dữ liệu riêng với lớp filesystem của container; việc giữ volume không thay thế yêu cầu sao lưu database.
-
-Node.js và Express cung cấp giao diện web, API CRUD, endpoint health và metrics. PostgreSQL giữ bảng `tasks`; pgAdmin là công cụ quan sát cấu trúc và dữ liệu. Truy vấn tham số hóa giúp ngăn dữ liệu người dùng bị ghép thành cú pháp SQL.
-
-Nginx nhận request từ trình duyệt rồi chuyển tới ứng dụng trong Docker. Bản demo sử dụng HTTP kèm security headers theo lựa chọn đề cho phép. Headers hỗ trợ bảo vệ trình duyệt nhưng không mã hóa đường truyền như HTTPS.
-
-Prometheus định kỳ lấy metrics; Grafana truy vấn và vẽ biểu đồ bằng PromQL. Exporter chuyển số liệu PostgreSQL, Nginx và container sang định dạng Prometheus. Loki lưu từng sự kiện log do Promtail chuyển đến; Grafana Explore dùng LogQL để tìm các request hoặc lỗi cụ thể.
-
-Hardening giảm quyền và bề mặt truy cập của hệ thống. Trong bài, các biện pháp được kiểm tra gồm non-root trên app/Nginx, filesystem gốc chỉ đọc, bỏ capabilities, `no-new-privileges`, phân tách mạng và hạn chế cổng host.
-
-# CHƯƠNG 3 KIẾN TRÚC VÀ LUỒNG HOẠT ĐỘNG
-
-## Vai trò và cổng dịch vụ
-
-| Service | Vai trò | Truy cập từ Windows |
-|---|---|---|
-| nginx | Reverse proxy và headers | `127.0.0.1:8080` |
-| task-app | Web, API, health, metrics | Qua Nginx; không publish 3000 |
-| db | PostgreSQL, volume dữ liệu | Nội bộ; không publish 5432 |
-| pgadmin | Công cụ quản trị PostgreSQL | `127.0.0.1:5050` |
-| prometheus | Thu thập và lưu metrics | `127.0.0.1:9090` |
-| grafana | Dashboard và Explore | `127.0.0.1:3001` |
-| loki và promtail | Lưu và chuyển log | Nội bộ |
-| postgres-exporter | Metrics PostgreSQL | Nội bộ, 9187 |
-| nginx-exporter | Metrics Nginx | Nội bộ, 9113 |
-| cadvisor | Metrics container | Nội bộ, 8080 |
-| log-init | Chuẩn bị quyền thư mục log | Chạy một lần, exit 0 |
-
-## Sơ đồ và luồng dữ liệu
-
-![Hình 3.1 Sơ đồ kiến trúc](architecture.png)
-*Hình 3.1. Các thành phần và luồng HTTP, metrics, log*
-
-Request đi từ trình duyệt đến Nginx, sau đó tới Express và PostgreSQL. App trả JSON/HTML; endpoint `/health` kiểm tra kết nối database. Prometheus chủ động scrape app và các exporter; Grafana đọc dữ liệu từ Prometheus. Với log, app và Nginx ghi file vào volume dùng chung, Promtail đọc file rồi gửi Loki; Grafana Explore truy vấn Loki.
-
-## Phân tách mạng
-
-| Mạng | Internal | Thành phần chính |
-|---|---|---|
-| front | Không | Nginx, task-app, nginx-exporter |
-| data | Có | App, PostgreSQL, pgAdmin, postgres-exporter |
-| observability | Có | App, Nginx, exporters, cAdvisor, Prometheus, Grafana, Loki, Promtail |
-| management | Không | pgAdmin, Prometheus, Grafana |
-
-Đây là bốn mạng chức năng. Compose có thể tạo thêm mạng default cho service khởi tạo; mạng đó không phục vụ luồng nghiệp vụ sau khi `log-init` kết thúc. Container nối nhiều mạng vẫn có thể đi ra ngoài qua mạng non-internal. Các giao diện quản trị chỉ bind loopback, phù hợp với demo tại cùng máy Windows.
-
-# CHƯƠNG 4 TASK TRACKER VÀ POSTGRESQL
-
-## Dữ liệu và kiểm tra đầu vào
-
-| Trường | Nội dung và ràng buộc |
+| Commit | Nội dung triển khai |
 |---|---|
-| id | Khóa chính tự tăng |
-| title và description | Tiêu đề bắt buộc, tối đa 160 ký tự; mô tả tối đa 4.000 ký tự |
-| due_date | Hạn hoàn thành kiểu DATE; có thể rỗng |
-| status | todo, in_progress, done |
-| priority | low, medium, high |
-| created_at và updated_at | Thời điểm tạo, cập nhật |
+| `8d265c0` | Ứng dụng, PostgreSQL, pgAdmin và Nginx |
+| `4c5451a` | Prometheus, Grafana và exporters |
+| `fc35b1e` | Loki, Promtail, hardening và báo cáo |
 
-Ứng dụng kiểm tra dữ liệu trước khi gửi SQL; PostgreSQL bổ sung CHECK constraints. Role `task_app` không phải superuser nhưng được cấp `USAGE, CREATE` trên schema `public` để chạy migration khi app khởi động. Vì vậy, quyền hiện tại rộng hơn một role chỉ được CRUD. Role `metrics_exporter` nhận `pg_monitor` để đọc thống kê phục vụ giám sát.
+Trên Windows, mở Docker Desktop ở chế độ Linux containers. Clone repository; với môi trường mới, sao chép `.env.example` thành `.env` và đặt mật khẩu riêng. Giữ `.env` ngoài Git; không ghi đè file môi trường đã có dữ liệu.
 
-## Xem danh sách công việc
+Tại thư mục dự án, chạy lần lượt: `docker compose config --quiet`, `docker compose up -d --build`, `docker compose ps -a`. Lệnh `config --quiet` kiểm tra cấu hình mà không in secrets sau nội suy.
 
-Mở `http://127.0.0.1:8080`. Kiểm tra danh sách và số lượng công việc theo trạng thái. Ảnh dưới minh họa các task mẫu có trạng thái và mức ưu tiên khác nhau.
+![Kết quả build và khởi chạy Compose](screenshots/compose-startup.png)
+*Hình 2. Kiểm tra Compose và khởi chạy stack*
 
-![Hình 4.1 Giao diện Task Tracker](screenshots/task-tracker-ui.png)
-*Hình 4.1. Website Task Tracker qua Nginx*
+![Danh sách container và port bindings](screenshots/services-status.png)
+*Hình 3. Danh sách service và port bindings sau khởi chạy*
 
-## Tạo và lọc công việc
+Có 12 service: 11 service vận hành và `log-init` chạy một lần để cấp quyền thư mục log rồi `Exited (0)`. Trạng thái đó là hoàn thành thành công. Chỉ app, PostgreSQL, Nginx và cAdvisor có healthcheck trong cấu hình đã kiểm tra; không gọi mọi container là healthy.
 
-Nhập tiêu đề, mô tả, hạn hoàn thành, mức ưu tiên và trạng thái; bấm tạo để lưu. Để trống hạn hoàn thành được chuẩn hóa thành `null`. Sau khi tạo, task xuất hiện trong danh sách; kiểm tra lại bằng pgAdmin hoặc API để xác nhận đã lưu vào DB.
+<!-- PAGEBREAK -->
 
-![Hình 4.2 Biểu mẫu tạo task](screenshots/task-create.png)
-*Hình 4.2. Nhập dữ liệu để tạo một công việc*
+# 3  Chức năng quản lý công việc
 
-Chọn “Đang thực hiện” ở bộ lọc trạng thái. Danh sách chỉ giữ task có `status=in_progress`. API còn hỗ trợ tìm theo từ khóa bằng tham số `q`; khi demo có thể sửa một task sang `done`, lọc lại rồi xóa task thử.
+Mở `http://127.0.0.1:8080` qua Nginx. Ứng dụng cho phép tạo, xem, sửa, xóa task; tìm kiếm qua API và lọc trạng thái trên giao diện. Mỗi task có tiêu đề, mô tả, deadline, trạng thái và mức ưu tiên.
 
-![Hình 4.3 Lọc trạng thái](screenshots/task-filter.png)
-*Hình 4.3. Danh sách sau khi lọc theo trạng thái*
+![Giao diện Task Tracker](screenshots/task-tracker-ui.png)
+*Hình 4. Danh sách công việc, thống kê trạng thái và form thao tác*
 
-## Kiểm tra API qua Nginx
+Tạo task: nhập tiêu đề bắt buộc (tối đa 160 ký tự), mô tả (tối đa 4.000), ngày `YYYY-MM-DD` nếu có; chọn `low/medium/high` và `todo/in_progress/done`. Ngày bỏ trống được chuẩn hóa thành `null`; dữ liệu sai bị từ chối.
 
-Chạy `node scripts/verify_e2e.js`. Script tạo task có mã riêng, tìm lại, cập nhật, xóa, kiểm tra 404 và dữ liệu sai; cuối cùng dọn task kiểm thử. Kết quả được ghi trong `docs/logs/verify_e2e.log`.
+![Biểu mẫu tạo task](screenshots/task-create.png)
+*Hình 5. Nhập dữ liệu tạo công việc mới*
 
-| Thao tác | HTTP mong đợi và đã kiểm tra |
+Sửa task để cập nhật nội dung, deadline hoặc trạng thái; checkbox chuyển hoàn thành. Lọc “Đang thực hiện” chỉ hiển thị task `in_progress`. Khi demo, tạo một task riêng, sửa/lọc rồi xóa; không xóa task cần giữ làm minh chứng.
+
+![Lọc task theo trạng thái](screenshots/task-filter.png)
+*Hình 6. Lọc danh sách theo trạng thái đang thực hiện*
+
+<!-- PAGEBREAK -->
+
+# 4  PostgreSQL, pgAdmin và API
+
+PostgreSQL lưu bảng `public.tasks` với `id` tự tăng, `title`, `description`, `due_date` (`DATE`), `status`, `priority`, `created_at` và `updated_at`. Ràng buộc đầu vào ở app và CHECK constraints ở DB hỗ trợ giữ dữ liệu hợp lệ; truy vấn nghiệp vụ dùng tham số hóa.
+
+Mở pgAdmin tại `http://127.0.0.1:5050`. Kết nối host `db`, port `5432`, database `task_tracker`, username `task_app`, mật khẩu `TASK_DB_PASSWORD` trong `.env`. Trong Query Tool, chạy: `SELECT id, title, due_date, status, priority FROM public.tasks ORDER BY id;`
+
+![pgAdmin hiển thị public.tasks](screenshots/pgadmin-tasks.png)
+*Hình 7. Đối chiếu bản ghi công việc trong PostgreSQL bằng pgAdmin*
+
+App chạy migration bằng role `task_app`; role này không phải superuser nhưng có `USAGE, CREATE` trên schema `public`. Quyền hiện tại rộng hơn CRUD. Exporter dùng role `metrics_exporter` và `pg_monitor`; PostgreSQL không publish cổng 5432 ra host.
+
+## Kiểm tra nghiệp vụ qua Nginx
+
+Chạy `node scripts/verify_e2e.js` từ gốc repo. Kịch bản đi qua cổng 8080 và PostgreSQL thật: health 200; tạo 201; tìm lại 200; sửa 200; xóa 204; sửa task đã xóa 404; dữ liệu sai 400; JSON hỏng 400. Task thử được dọn, không cần xuất hiện trong ảnh pgAdmin.
+
+![Kết quả E2E qua Nginx](screenshots/api-e2e-terminal.png)
+*Hình 8. Kết quả tám bước E2E tạo đọc sửa xóa và xử lý lỗi*
+
+<!-- PAGEBREAK -->
+
+# 5  Nginx reverse proxy và bảo vệ HTTP
+
+Nginx nhận request tại `127.0.0.1:8080` rồi proxy tới `task-app:3000` trong mạng Docker; chuyển thông tin client qua headers. Người dùng truy cập website qua Nginx, trong khi cổng app 3000 không publish trực tiếp ra Windows.
+
+| Header | Tác dụng trong cấu hình |
 |---|---|
-| GET /health | 200; status ok, database connected |
-| POST /api/tasks | 201; task được tạo |
-| GET với q | 200; tìm được task vừa tạo |
-| PATCH task hợp lệ | 200; trạng thái được cập nhật |
-| DELETE task hợp lệ | 204 |
-| PATCH task đã xóa | 404 |
-| Dữ liệu sai và JSON hỏng | 400 |
+| `Content-Security-Policy` | Giới hạn nguồn tải tài nguyên theo chính sách của trang |
+| `X-Frame-Options DENY` | Ngăn nhúng trang trong frame |
+| `X-Content-Type-Options nosniff` | Hạn chế trình duyệt đoán MIME type |
+| `Referrer-Policy` | Kiểm soát thông tin referrer gửi sang trang khác |
+| `Permissions-Policy` | Hạn chế camera, microphone và geolocation |
 
-![Hình 4.4 Kiểm tra API](screenshots/api-e2e-terminal.png)
-*Hình 4.4. Kết quả chạy kịch bản E2E qua Nginx*
+## Cách kiểm chứng
 
-## Kiểm tra dữ liệu bằng pgAdmin
+Trong PowerShell chạy `curl.exe --noproxy '*' --max-time 15 -sS -I http://127.0.0.1:8080/`, sau đó đọc mã HTTP và tìm đủ năm headers trong response. `-I` chỉ lấy headers; `--noproxy` bỏ proxy môi trường; `--max-time` giới hạn thời gian chờ.
 
-Mở `http://127.0.0.1:5050` và kết nối server Task Tracker PostgreSQL. Host là `db`, port `5432`, database `task_tracker`, user `task_app`; sử dụng mật khẩu cục bộ tương ứng, không đưa mật khẩu vào ảnh. Trong Query Tool chạy:
+![Security headers từ Nginx](screenshots/security-headers.png)
+*Hình 9. Response qua Nginx có HTTP 200 và năm security headers*
 
-```sql
-SELECT id, title, due_date, status, priority FROM public.tasks ORDER BY id;
-```
+## Ý nghĩa và giới hạn
 
-![Hình 4.5 PostgreSQL trên pgAdmin](screenshots/pgadmin-tasks.png)
-*Hình 4.5. pgAdmin truy vấn dữ liệu trong public.tasks*
+Các headers hỗ trợ bảo vệ phía trình duyệt, không mã hóa dữ liệu trên đường truyền. Bản demo dùng HTTP kèm security headers theo lựa chọn đề cho phép. Nếu triển khai cho người dùng ngoài máy demo, cần bổ sung TLS, xác thực và rà soát quyền truy cập.
 
-Kết quả có bản ghi chứng minh dữ liệu được lưu trong PostgreSQL. Số dòng thay đổi theo các task đang tồn tại; task E2E đã được xóa sau kiểm tra nên không cần xuất hiện trong bảng.
+Nginx chạy non-root UID 101, read-only rootfs, bỏ toàn bộ capabilities và dùng `no-new-privileges`. Volume log có quyền ghi phù hợp; thư mục `/tmp` dùng tmpfs. Các biện pháp này được đối chiếu cùng app ở trang 9.
 
-# CHƯƠNG 5 NGINX REVERSE PROXY VÀ SECURITY HEADERS
+<!-- PAGEBREAK -->
 
-Nginx nhận request tại `127.0.0.1:8080`, proxy đến `task-app:3000` và chuyển tiếp thông tin client qua headers. App và PostgreSQL không publish cổng riêng ra Windows. Phương án sử dụng HTTP kèm headers đáp ứng lựa chọn của đề; báo cáo không coi đây là minh chứng HTTPS.
+# 6  Giám sát bằng Prometheus và Grafana
 
-| Header | Ý nghĩa trong cấu hình |
-|---|---|
-| Content-Security-Policy | Giới hạn nguồn tải tài nguyên của trang |
-| X-Frame-Options DENY | Không cho nhúng trang vào frame |
-| X-Content-Type-Options nosniff | Hạn chế trình duyệt tự đoán MIME type |
-| Referrer-Policy | Giảm thông tin referrer gửi đi |
-| Permissions-Policy | Hạn chế camera, microphone và geolocation |
+Prometheus scrape mỗi 15 giây. Mở `http://127.0.0.1:9090/targets`: năm jobs gồm `prometheus`, `task_tracker_app`, `postgres`, `nginx`, `containers`. `UP` xác nhận scrape; `pg_up=1` và `nginx_up=1` xác nhận exporter đọc được dịch vụ tương ứng.
 
-Chạy lệnh sau để chỉ lấy response headers; `--noproxy` bỏ qua proxy môi trường và `--max-time` giới hạn thời gian chờ:
+![Prometheus targets](screenshots/prometheus-targets.png)
+*Hình 10. Năm targets ở trạng thái UP trong phiên kiểm tra*
 
-```powershell
-curl.exe --noproxy '*' --max-time 15 -sS -I http://127.0.0.1:8080/
-```
+Phát sinh request rồi truy vấn `task_tracker_http_requests_total`. Đây là counter tổng request theo method, route, status_code; `rate(...[5m])` biểu diễn tốc độ request theo giây.
 
-![Hình 5.1 Response headers](screenshots/security-headers.png)
-*Hình 5.1. Response qua Nginx có các security headers*
+![Truy vấn metric ứng dụng](screenshots/prometheus-metric-query.png)
+*Hình 11. Truy vấn counter HTTP trên Prometheus*
 
-Kiểm tra dòng HTTP 200 và đủ năm header. Headers giảm một số rủi ro phía trình duyệt; khi đưa hệ thống lên Internet vẫn cần TLS, xác thực và rà soát cấu hình vận hành.
+Mở Grafana `http://127.0.0.1:3001` → Task Tracker Overview; chọn time range có traffic rồi Refresh. Dashboard provision sẵn năm panel: request rate, latency p95, PostgreSQL health, Nginx connections và container CPU.
 
-# CHƯƠNG 6 PROMETHEUS VÀ GRAFANA
+![Dashboard Grafana](screenshots/grafana-dashboard.png)
+*Hình 12. Dashboard giám sát ứng dụng web database và container*
 
-## Kiểm tra các mục tiêu giám sát
+p95 ước tính từ histogram; khi No data cần kiểm tra targets, datasource và time range. Số liệu cAdvisor phụ thuộc lớp máy ảo Linux của Docker Desktop.
 
-Prometheus scrape định kỳ 15 giây. Mở `http://127.0.0.1:9090/targets`; trong lần kiểm tra, cả năm jobs đều UP.
+<!-- PAGEBREAK -->
 
-| Job | Nguồn metrics | Nội dung theo dõi |
-|---|---|---|
-| task_tracker_app | task-app:3000/metrics | Request, latency, Node.js runtime |
-| postgres | postgres-exporter:9187 | Kết nối và thống kê PostgreSQL |
-| nginx | nginx-exporter:9113 | Kết nối Nginx qua stub_status |
-| containers | cadvisor:8080 | Tài nguyên container |
-| prometheus | localhost:9090 | Prometheus tự giám sát |
+# 7  Log tập trung với Loki và Promtail
 
-![Hình 6.1 Prometheus Targets](screenshots/prometheus-targets.png)
-*Hình 6.1. Năm Prometheus targets ở trạng thái UP*
+App ghi JSON tại `/var/log/app/app.jsonl`; Nginx ghi access/error trong `/var/log/nginx`. Volume `service_logs` mount vào `/var/log` ở app/Nginx, và chỉ đọc tại `/var/log/collected` ở Promtail. Promtail thêm labels, gửi Loki; Grafana Explore truy vấn qua datasource Loki.
 
-UP xác nhận scrape thành công. Kiểm tra thêm `pg_up=1` hoặc `nginx_up=1` để biết exporter đọc được dịch vụ tương ứng; một target UP chưa tự chứng minh mọi chức năng nghiệp vụ đều đúng.
-
-## Truy vấn metrics ứng dụng
-
-Truy cập website hoặc chạy E2E để phát sinh request. Trong Prometheus Query, nhập `task_tracker_http_requests_total` rồi Execute. Counter này đếm tổng request theo method, route và status_code; nó không trực tiếp biểu diễn số request mỗi giây.
-
-![Hình 6.2 Truy vấn metric ứng dụng](screenshots/prometheus-metric-query.png)
-*Hình 6.2. Các series của task_tracker_http_requests_total*
-
-## Đọc dashboard Grafana
-
-Mở `http://127.0.0.1:3001`, đăng nhập bằng tài khoản cục bộ và mở Task Tracker Overview. Chọn khoảng thời gian có request vừa tạo, bấm Refresh. Datasource Prometheus và Loki cùng dashboard được provision từ cấu hình trong repo.
-
-![Hình 6.3 Dashboard Grafana](screenshots/grafana-dashboard.png)
-*Hình 6.3. Dashboard giám sát ứng dụng, Nginx, DB và container*
-
-Dashboard có request rate, latency p95, PostgreSQL exporter health, Nginx active connections và Container CPU. Rate dùng `rate(...[5m])`; p95 là độ trễ phân vị 95 ước tính từ histogram; `pg_up=1` là exporter kết nối được DB. Khi có No data, kiểm tra targets, datasource và time range trước khi thay cấu hình.
-
-# CHƯƠNG 7 LOKI PROMTAIL VÀ LOGQL
-
-App ghi log JSON vào `/var/log/app/app.jsonl`; Nginx ghi access/error log trong `/var/log/nginx`. Volume `service_logs` được gắn chỉ đọc vào Promtail tại `/var/log/collected`. Promtail thêm labels rồi gửi Loki; Grafana Explore dùng datasource Loki để truy vấn.
-
-## Truy vấn trên Grafana Explore
-
-Trong Explore, chọn Loki và khoảng thời gian có request. Chạy lần lượt ba query dưới đây; nên bật riêng từng query để dễ đọc kết quả.
+## Ba truy vấn LogQL
 
 ```logql
 {service="task-tracker"} | json
 ```
 
-Query thứ nhất chọn log app và phân tích JSON để đọc method, path, statusCode, requestId và durationMs.
+Đọc log ứng dụng và phân tích các trường method, path, statusCode, requestId, durationMs.
 
 ```logql
 {service="task-tracker"} | json | statusCode >= 200 and statusCode < 300
 ```
 
-Query thứ hai giữ các request thành công thuộc dải 2xx. Nếu chỉ viết `statusCode >= 200`, kết quả còn bao gồm lỗi 4xx và 5xx.
+Lọc request thành công 2xx; chỉ dùng `>= 200` sẽ lấy cả lỗi 4xx và 5xx.
 
 ```logql
 {service="nginx", log_type="access"} |= "/api/tasks"
 ```
 
-Query thứ ba tìm access log Nginx có đường dẫn API task. Mỗi dòng là một request; các mã 204 và 404 có thể thuộc các request khác nhau, cần đối chiếu method, path và thời gian thay vì suy luận từ riêng mã lỗi.
+Tìm access log chứa đường dẫn API công việc; đối chiếu method, mã HTTP và thời gian.
 
-![Hình 7.1 Explore và log](screenshots/grafana-explore.png)
-*Hình 7.1. Grafana Explore truy vấn log qua datasource Loki*
+![Grafana Explore](screenshots/grafana-explore.png)
+*Hình 13. Grafana Explore truy vấn log ứng dụng và Nginx*
 
-## Kiểm tra tự động bằng API
+Chạy `node scripts/check_loki.js` để kiểm chứng qua API. Script chỉ báo thành công khi cả ba query có log entries; nếu chưa có dữ liệu, tạo GET an toàn rồi retry có giới hạn. Vẫn rỗng hoặc lỗi thì exit 1.
 
-Chạy `node scripts/check_loki.js`. Script yêu cầu cả ba query có log entries, phát sinh GET an toàn và retry có giới hạn khi chưa có dữ liệu. Nếu vẫn rỗng, script trả exit 1; chỉ thông báo thành công khi cả ba có entries. Output đầy đủ nằm tại `docs/logs/check_loki.log`.
+![Kiểm chứng ba truy vấn LogQL](screenshots/loki-logql-verification.png)
+*Hình 14. Ba truy vấn có dữ liệu trong phiên xác minh*
 
-![Hình 7.2 Kiểm tra LogQL bằng API](screenshots/loki-logql-verification.png)
-*Hình 7.2. Kết quả ba truy vấn và số log entries*
+Lỗi database giả lập trong unit test không mặc nhiên là log runtime Loki. Các dòng HTTP 400 từ E2E có thể là ca âm chủ động, cần đọc ngữ cảnh trước khi kết luận hệ thống lỗi.
 
-Có thể chạy `node scripts/check_loki.js --test-empty` để kiểm tra nhánh không có dữ liệu; exit 1 là kết quả mong đợi của ca âm này. Lỗi database giả lập trong unit test chạy ở tiến trình test riêng, không phải mặc nhiên là log runtime gửi về Loki.
+<!-- PAGEBREAK -->
 
-# CHƯƠNG 8 HARDENING VÀ KIỂM THỬ
+# 8  Hardening mạng và quyền truy cập
 
-## Bộ kiểm thử ứng dụng
+Các biện pháp được áp dụng theo phạm vi từng service, kết hợp giảm quyền tiến trình, hạn chế filesystem, phân tách mạng và bảo vệ secrets. Không khẳng định tất cả container đều non-root hoặc có cùng hardening.
 
-Chạy `npm test` trong `app` hoặc dùng lệnh dưới từ gốc repo. Chế độ silent chỉ tắt log nội bộ của app trong tiến trình test, giữ nguyên assertions và kết quả của test runner:
+Chạy `docker compose exec -T task-app id` và `docker compose exec -T nginx id`. Inspect app/Nginx để đối chiếu User, ReadonlyRootfs, CapDrop và SecurityOpt.
 
-```powershell
-$env:LOG_LEVEL = 'silent'
-npm --prefix app test -- --test-reporter=spec
-Remove-Item Env:LOG_LEVEL
-```
+![UID và thuộc tính hardening app/Nginx](screenshots/hardening-verification.png)
+*Hình 15. UID 10001 và 101 cùng cấu hình read-only CapDrop và no-new-privileges*
 
-![Hình 8.1 Kết quả unit và API tests](screenshots/unit-api-tests.png)
-*Hình 8.1. Kết quả 12 ca kiểm thử của ứng dụng*
-
-Bộ test có 5 ca validation và 7 ca API với database giả lập: health, metrics, CRUD, dữ liệu sai, 404 và lỗi database không làm lộ SQL/stack trong response. Kết quả 12/12 pass được lưu tại `docs/logs/unit_tests.log`. E2E ở Chương 4 bổ sung kiểm tra với stack PostgreSQL thật qua Nginx.
-
-## Xác minh hardening container
-
-```powershell
-docker compose exec -T task-app id
-docker compose exec -T nginx id
-```
-
-App chạy UID 10001, Nginx UID 101. Docker inspect xác nhận hai service có `ReadOnlyRootfs=true`, `CapDrop=[ALL]` và `no-new-privileges`. Rootfs chỉ đọc vẫn cho phép ghi vào volume hoặc tmpfs đã cấp; không nên coi đó là biện pháp ngăn mọi kiểu ghi dữ liệu.
-
-![Hình 8.2 Kiểm tra cấu hình hardening](screenshots/hardening-verification.png)
-*Hình 8.2. UID và cấu hình bảo vệ của app và Nginx*
-
-`log-init` chạy root một lần để chown thư mục log rồi exit 0. Không khẳng định toàn bộ container đều non-root hoặc đều có cùng cấu hình hardening. Các mount quan sát host của cAdvisor được khai báo read-only nhưng vẫn cần được đánh giá khi triển khai ngoài môi trường demo.
-
-## Kiểm tra mạng và quyền database
-
-```powershell
-docker network inspect task-tracker-de24_data task-tracker-de24_observability
-```
-
-Chỉ đọc các trường cần kiểm tra: hai mạng có Internal=true; app và DB không có cổng publish; các giao diện được bind `127.0.0.1`. Truy vấn `pg_roles` xác nhận `task_app` và `metrics_exporter` không phải superuser. Không in toàn bộ Compose sau nội suy hoặc `.env` khi chụp minh chứng.
-
-![Hình 8.3 Network và database roles](screenshots/networks-db-roles.png)
-*Hình 8.3. Network isolation, role PostgreSQL và port bindings*
-
-Các biện pháp đã áp dụng gồm non-root app/Nginx, rootfs chỉ đọc, CapDrop, no-new-privileges, phân tách mạng, loopback ports, role DB không phải superuser và secrets cục bộ được Git ignore. Quyền CREATE của `task_app` phục vụ migration được nêu tại Chương 4; có thể tách role migration để thu hẹp quyền ở môi trường vận hành lâu dài.
-
-## Kiểm tra dữ liệu sau restart
-
-Chạy `node scripts/test_persistence.js`. Script tạo marker task riêng, restart `db` và `task-app`, chờ health phục hồi, tìm lại marker rồi xóa. Không dùng `down -v`, vì tùy chọn đó xóa named volumes.
-
-![Hình 8.4 Kiểm tra persistence](screenshots/persistence-restart.png)
-*Hình 8.4. Marker còn sau restart và được dọn thành công*
-
-Kết quả xác nhận marker còn sau restart và được xóa với HTTP 204. Phép kiểm tra này chứng minh dữ liệu tồn tại qua chu kỳ restart đã thực hiện, không phải kiểm thử backup/restore hoặc mọi tình huống mất dữ liệu. Log nằm tại `docs/logs/test_persistence.log`.
-
-## Tổng hợp kết quả
-
-| Hạng mục | Kết quả ghi nhận |
+| Biện pháp | Phạm vi và cách hoạt động |
 |---|---|
-| Compose và dịch vụ | Cấu hình hợp lệ; 11 service vận hành, log-init exit 0 |
-| Unit và API tests | 12/12 pass |
-| E2E qua Nginx | 8 bước đạt; task thử đã dọn |
-| Prometheus | 5/5 targets UP; app metric có dữ liệu |
-| Grafana và Loki | Dashboard có dữ liệu; 3 query LogQL có entries |
-| Hardening | Các thuộc tính app/Nginx, mạng, role và port đã kiểm tra |
-| Persistence | Marker còn sau restart; dọn thành công |
+| Non-root và giảm quyền | App UID 10001, Nginx UID 101; `cap_drop ALL`; `no-new-privileges` |
+| Filesystem chỉ đọc | App/Nginx `read_only`; vẫn ghi vào volume log và tmpfs `/tmp` |
+| Network isolation | `data`, `observability` là internal; `front`, `management` là bridge thường |
+| Cổng và tài khoản | UI bind 127.0.0.1; app/DB không publish 3000/5432; role DB không superuser |
+| Secrets và SQL | Mật khẩu riêng trong `.env` được ignore; SQL nghiệp vụ tham số hóa |
 
-# KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
+![Network, role database và cổng host](screenshots/networks-db-roles.png)
+*Hình 16. Kiểm tra Internal DB roles và các cổng host*
 
-Đề tài đã triển khai Task Tracker với PostgreSQL và pgAdmin bằng Docker Compose; website đi qua Nginx có security headers. Prometheus/Grafana cung cấp giám sát container, web và DB; Loki/Promtail hỗ trợ ba truy vấn LogQL. Các kịch bản kiểm tra, hình và log được lưu cùng repository để thực hiện lại khi demo.
+DB chỉ nối `data` và không publish cổng; không mô tả là “cô lập hoàn toàn khỏi host”. Container đa mạng có thể đi ra qua `front/management`. `log-init` chạy root một lần để chown `/logs/app` và `/logs/nginx` rồi exit 0. Có thể tách role migration để thu hẹp quyền `task_app` khi vận hành lâu dài.
 
-Hệ thống hiện phục vụ quản lý công việc cá nhân trên máy demo. Các giới hạn gồm chưa có xác thực/phân quyền nhóm, chưa cấu hình HTTPS và chưa triển khai quy trình sao lưu/khôi phục. Hướng mở rộng phù hợp là tách role migration khỏi role ứng dụng, bổ sung đăng nhập nếu cần dùng chung, TLS, backup và cảnh báo giám sát. Promtail được giữ để đáp ứng stack của đề; khi nâng cấp cần đánh giá phương án thu thập log thay thế và kiểm tra tương đương.
+<!-- PAGEBREAK -->
 
-# TÀI LIỆU THAM KHẢO
+# 9  Kiểm thử tổng kết và vận hành
 
-1. Docker Compose documentation: https://docs.docker.com/compose/
-2. PostgreSQL 17 documentation: https://www.postgresql.org/docs/17/
-3. Express documentation: https://expressjs.com/
-4. Nginx documentation: https://nginx.org/en/docs/
-5. Prometheus documentation: https://prometheus.io/docs/
-6. Grafana documentation: https://grafana.com/docs/grafana/latest/
-7. Loki và LogQL documentation: https://grafana.com/docs/loki/latest/
-8. Repository Task Tracker Đề 24: https://github.com/quocdoanhdang8/DTC245200775-task-tracker-de24
+Bộ Unit/API hiện tại có 13 ca dùng database giả lập; bộ test 13/13 và QA harness 20/20 đã đạt trong phiên kiểm tra code trước. Hình 17 là ảnh chụp của phiên cũ có 12 ca; giữ nguyên ảnh làm minh chứng lịch sử, không dùng nó để khẳng định kết quả 13 ca.
 
-# PHỤ LỤC A HƯỚNG DẪN CHẠY TRÊN WINDOWS
+![Kết quả 12 ca Unit/API ở phiên trước](screenshots/unit-api-tests.png)
+*Hình 17. Ảnh phiên cũ: 12 ca Unit/API; không phải ảnh kết quả 13 ca hiện tại*
 
-Môi trường cần Docker Desktop đang chạy, Git và PowerShell. Node.js dùng để chạy script kiểm tra ngoài container; Python cùng python-docx/Pillow dùng để dựng báo cáo. Tại thư mục dự án:
+Chạy `node scripts/test_persistence.js`: tạo marker, restart `db/task-app`, chờ health, đối chiếu task còn nguyên rồi xóa. Nếu còn marker dở, chạy `scripts/persistence_step2.js` để xác minh/dọn. Đây là kiểm tra restart đã thực hiện, không thay cho backup/restore.
 
-```powershell
-docker compose config --quiet
-docker compose up -d --build
-docker compose ps -a
-Invoke-RestMethod 'http://127.0.0.1:8080/health'
-```
+![Kiểm tra persistence qua restart](screenshots/persistence-restart.png)
+*Hình 18. Marker tồn tại sau restart và được dọn với HTTP 204*
 
-Với clone mới, tạo `.env` từ `.env.example` và đặt mật khẩu riêng trước khi chạy. Không ghi đè `.env` của môi trường đã có. Đổi mật khẩu trong file không tự đổi tài khoản đã khởi tạo trong volume PostgreSQL, Grafana hoặc pgAdmin; cần cập nhật dịch vụ tương ứng.
+Kết quả runtime Windows mới nhất do người dùng cung cấp: 11 service vận hành, `log-init` exit 0; E2E 8/8 và task ID 28 đã dọn; Loki 3/3 query có dữ liệu; marker persistence ID 29 còn nguyên sau restart rồi được dọn. Cả năm Prometheus jobs UP, `pg_up=1`, `nginx_up=1`; Grafana có dữ liệu ở năm panel. Đây là thông tin người dùng báo cáo; ảnh 2–18 vẫn là minh chứng các phiên cũ.
 
-| Giao diện | URL |
-|---|---|
-| Website Task Tracker | http://127.0.0.1:8080 |
-| pgAdmin | http://127.0.0.1:5050 |
-| Prometheus Targets | http://127.0.0.1:9090/targets |
-| Grafana | http://127.0.0.1:3001 |
+## Vận hành và trình tự demo
 
-Chạy lại E2E, Loki và persistence bằng các script ở Chương 4, 7, 8. Dừng stack bằng `docker compose down` và giữ nguyên volumes. Khi có lỗi, xem đúng service bằng `docker compose logs --tail=50 TEN_SERVICE`; kiểm tra health, targets, time range và datasource trước khi chỉnh cấu hình.
+URL: website :8080; pgAdmin :5050; Prometheus :9090; Grafana :3001, đều tại 127.0.0.1. Demo: Compose → tạo/sửa/lọc task → pgAdmin → headers → targets/dashboard → ba LogQL → UID/mạng/role → persistence. Dừng bằng `docker compose down` để giữ volumes; `down -v` xóa dữ liệu. Đổi `.env` không tự đổi mật khẩu tài khoản trong volumes.
 
-# PHỤ LỤC B GITHUB VÀ TRÌNH TỰ DEMO
+## Kết luận và tài liệu tham khảo
 
-Mã nguồn, cấu hình Nginx/monitoring, Compose, README và báo cáo được quản lý trên repository của đề tài. Ba mốc triển khai ban đầu có nội dung tương ứng yêu cầu học phần:
+Hệ thống đáp ứng phạm vi quản lý công việc cá nhân và các thành phần triển khai của Đề 24. Hướng phát triển: xác thực nhóm, TLS, backup/restore và cảnh báo. Promtail được giữ theo yêu cầu học phần; cần đánh giá công cụ thay thế khi nâng cấp.
 
-| Commit | Nội dung |
-|---|---|
-| 8d265c0 | Task Tracker, PostgreSQL, pgAdmin và Nginx |
-| 4c5451a | Prometheus, Grafana và exporters |
-| fc35b1e | Loki, Promtail, hardening và báo cáo |
-
-Các commit sau bổ sung kiểm thử, ảnh chụp và hoàn thiện tài liệu. Có thể đối chiếu bằng `git log --oneline --reverse`; dùng `git status -sb` để kiểm tra trạng thái local/remote. `.env` được Git ignore; không đưa mật khẩu hoặc token vào README hay minh chứng.
-
-Trình tự demo: xem Compose services; tạo/sửa/lọc một task trên website; kiểm tra pgAdmin; xem headers; mở Prometheus Targets và Grafana dashboard; chạy ba LogQL; chỉ ra UID/mạng/role; trình bày test và persistence. Khi giải thích, phân biệt metrics với log, HTTP headers với HTTPS và restart persistence với backup/restore.
+Tài liệu: [Docker Compose](https://docs.docker.com/compose/); [PostgreSQL 17](https://www.postgresql.org/docs/17/); [Express](https://expressjs.com/); [Nginx](https://nginx.org/en/docs/); [Prometheus](https://prometheus.io/docs/); [Grafana](https://grafana.com/docs/grafana/latest/); [Loki](https://grafana.com/docs/loki/latest/). Mã nguồn và hướng dẫn chạy: repository tại trang 3.
